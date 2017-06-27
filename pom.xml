@@ -92,6 +92,12 @@
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.matsim.contrib</groupId>
+            <artifactId>socnetsim</artifactId>
+            <version>0.10.0-eth</version>
+        </dependency>
     </dependencies>
 
     <profiles>
