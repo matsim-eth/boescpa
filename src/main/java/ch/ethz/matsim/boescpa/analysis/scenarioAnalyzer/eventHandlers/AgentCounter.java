@@ -64,7 +64,7 @@ public class AgentCounter extends ScenarioAnalyzerEventHandler implements Activi
 				agents.add(vals[0]);
 			}
 		}
-		return "Number of Agents: " + (scaleFactor * agents.size()) + ScenarioAnalyzer.NL;
+		return "Number of Agents: " + ScenarioAnalyzer.DEL + (scaleFactor * agents.size()) + ScenarioAnalyzer.NL;
 	}
 
 	@Override
