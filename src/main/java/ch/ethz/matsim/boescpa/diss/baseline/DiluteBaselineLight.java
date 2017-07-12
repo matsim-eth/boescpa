@@ -29,8 +29,11 @@ import ch.ethz.matsim.boescpa.lib.tools.coordUtils.CoordAnalyzer;
 import com.vividsolutions.jts.geom.Geometry;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
+import org.matsim.api.core.v01.network.NetworkWriter;
+import org.matsim.api.core.v01.network.Node;
 import org.matsim.api.core.v01.population.*;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
@@ -38,6 +41,7 @@ import org.matsim.core.config.groups.FacilitiesConfigGroup;
 import org.matsim.core.config.groups.HouseholdsConfigGroup;
 import org.matsim.core.config.groups.NetworkConfigGroup;
 import org.matsim.core.config.groups.PlansConfigGroup;
+import org.matsim.core.network.algorithms.NetworkCleaner;
 import org.matsim.core.population.routes.NetworkRoute;
 import org.matsim.core.router.*;
 import org.matsim.core.router.costcalculators.OnlyTimeDependentTravelDisutility;
@@ -45,33 +49,35 @@ import org.matsim.core.router.util.LeastCostPathCalculator;
 import org.matsim.core.router.util.PreProcessDijkstra;
 import org.matsim.core.router.util.TravelDisutility;
 import org.matsim.core.router.util.TravelTime;
+import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.core.trafficmonitoring.FreeSpeedTravelTime;
 import org.matsim.core.utils.gis.ShapeFileReader;
 import org.matsim.core.utils.misc.Counter;
-import org.matsim.facilities.ActivityFacilities;
-import org.matsim.facilities.ActivityFacility;
+import org.matsim.facilities.*;
 import org.matsim.households.*;
 import org.matsim.pt.config.TransitConfigGroup;
+import org.matsim.pt.transitSchedule.api.*;
 import org.matsim.utils.objectattributes.ObjectAttributesUtils;
 import org.matsim.utils.objectattributes.ObjectAttributesXmlReader;
 import org.matsim.utils.objectattributes.ObjectAttributesXmlWriter;
+import org.matsim.vehicles.*;
 import org.opengis.feature.simple.SimpleFeature;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * Dilutes a scenario to the provided area (SHP-file). This means:
- * 	- all agents who at least pass through the area  are kept(this includes any agent with at least one activity in the area)
- * 	- the full original network and all original facilities are kept
- * 	- the full original pt service is kept
+ * Dilutes a scenario to the provided area (SHP-file) - diluting in the new IVT sense. This means:
+ * 	- all agents who at least pass through the area  are kept (this includes any agent with at least one activity in the area)
+ * 	- only the full network in the area plus all arterial links are kept
+ * 	- only the full facilities in the area plus all facilities used by agents are kept
+ * 	- the full original pt service from the area plus all rail pt are kept
+ *
+ * This resembles heavily and is based on the ch.ethz.matsim.ivt_baseline.preparation.ZHCutter
  *
  * @author boescpa
  */
-public class DiluteBaseline {
+public class DiluteBaselineLight {
 
 	private final static String COMMUTER = "outAct";
 
@@ -81,7 +87,7 @@ public class DiluteBaseline {
 	private final Network network;
 	private final ActivityFacilities facilities;
 
-	private DiluteBaseline(Config config, String pathToSHPOfCutArea, String pathToOutputFolder) {
+	private DiluteBaselineLight(Config config, String pathToSHPOfCutArea, String pathToOutputFolder) {
 		// load network
 		this.network = NetworkUtils.readNetwork(config.network().getInputFile());
 		this.facilities = FacilityUtils.readFacilities(config.facilities().getInputFile());
@@ -102,42 +108,186 @@ public class DiluteBaseline {
 		final String pathToSHPFile = args[2];
 
 		Config config = ConfigUtils.loadConfig(pathToConfig);
-		DiluteBaseline diluter = new DiluteBaseline(config, pathToSHPFile, pathToOutputFolder);
+		DiluteBaselineLight diluter = new DiluteBaselineLight(config, pathToSHPFile, pathToOutputFolder);
 
 		// cut demand:
-		Population inputPopulation = diluter.loadAndRouteInputPopulation(config.plans());
-		Population filteredPopulation = diluter.filterPopulation(inputPopulation);
+		Population filteredPopulation = diluter.filterPopulation(config.plans());
 		diluter.filterHouseholds(config.households(), filteredPopulation);
+		ActivityFacilities filteredFacilities = diluter.filterFacilities(config.facilities(), filteredPopulation);
 
-		// copy facilities and supply
-		try {
-			diluter.copyFacilities(config.facilities());
-			diluter.copyTransitSchedule(config.transit());
-			diluter.copyVehicles(config.transit());
-			diluter.copyNetwork(config.network());
-		} catch (IOException e) {
-			e.printStackTrace();
+		// cut supply:
+		TransitSchedule filteredSchedule = diluter.filterTransitSchedule(config.transit());
+		diluter.filterVehicles(config.transit(), filteredSchedule);
+		Network onlyCarNetwork = diluter.filterNetwork(config.network(), filteredSchedule);
+
+		// repair scenario:
+		diluter.reconnectLostFacilities(filteredFacilities, onlyCarNetwork);
+	}
+
+	private void reconnectLostFacilities(ActivityFacilities filteredFacilities, Network onlyCarNetwork) {
+		// reconnect all lost facilities
+		for (ActivityFacility facility : filteredFacilities.getFacilities().values()) {
+			if (!onlyCarNetwork.getLinks().keySet().contains(facility.getLinkId())) {
+				ActivityFacilityImpl facilityImpl = (ActivityFacilityImpl) facility;
+				Link nearestRightEntryLink = org.matsim.core.network.NetworkUtils.getNearestRightEntryLink(
+						onlyCarNetwork, facility.getCoord());
+				facilityImpl.setLinkId(nearestRightEntryLink.getId());
+			}
+		}
+		// write facilities
+		new FacilitiesWriter(filteredFacilities).write(outputPath + "facilities.xml.gz");
+	}
+
+	private Network filterNetwork(NetworkConfigGroup networkConfigGroup, TransitSchedule filteredSchedule) {
+		// load network
+		Network inputNetwork = NetworkUtils.readNetwork(networkConfigGroup.getInputFile());
+		Network filteredNetwork = org.matsim.core.network.NetworkUtils.createNetwork();
+		Set<Id<Link>> scheduleLinks = getScheduleLinks(filteredSchedule);
+		// filter only-car-network
+		Network onlyCarNetwork = org.matsim.core.network.NetworkUtils.createNetwork();
+		for (Link link : inputNetwork.getLinks().values()) {
+			if (scheduleLinks.contains(link.getId()) // keep all pt links
+					|| link.getCapacity() >= 1000 // keep all arterial links
+					|| inArea(link.getFromNode().getCoord())
+					|| inArea(link.getToNode().getCoord())) {
+				addLink(onlyCarNetwork, link);
+			}
+		}
+		new NetworkCleaner().run(onlyCarNetwork);
+		// filter network
+		for (Link link : inputNetwork.getLinks().values()) {
+			if (scheduleLinks.contains(link.getId())
+					|| onlyCarNetwork.getLinks().keySet().contains(link.getId())) {
+				addLink(filteredNetwork, link);
+			}
+		}
+		// write network
+		new NetworkWriter(filteredNetwork).write(outputPath + "network.xml.gz");
+		return onlyCarNetwork;
+	}
+
+	private void addLink(Network network, Link link) {
+		if (!network.getNodes().containsKey(link.getFromNode().getId())) {
+			Node node = network.getFactory().createNode(link.getFromNode().getId(), link.getFromNode().getCoord());
+			network.addNode(node);
+		}
+		if (!network.getNodes().containsKey(link.getToNode().getId())) {
+			Node node = network.getFactory().createNode(link.getToNode().getId(), link.getToNode().getCoord());
+			network.addNode(node);
+		}
+		network.addLink(link);
+		link.setFromNode(network.getNodes().get(link.getFromNode().getId()));
+		link.setToNode(network.getNodes().get(link.getToNode().getId()));
+	}
+
+	private Set<Id<Link>> getScheduleLinks(TransitSchedule filteredSchedule) {
+		Set<Id<Link>> scheduleLinks = new HashSet<>();
+		for (TransitLine transitLine : filteredSchedule.getTransitLines().values()) {
+			for (TransitRoute transitRoute : transitLine.getRoutes().values()) {
+				scheduleLinks.addAll(transitRoute.getRoute().getLinkIds());
+				for (TransitRouteStop transitStop : transitRoute.getStops()) {
+					scheduleLinks.add(transitStop.getStopFacility().getLinkId());
+				}
+			}
+		}
+		return scheduleLinks;
+	}
+
+	private void filterVehicles(TransitConfigGroup transitConfigGroup, TransitSchedule filteredSchedule) {
+		// load vehicles
+		Vehicles inputVehicles = VehicleUtils.createVehiclesContainer();
+		new VehicleReaderV1(inputVehicles).readFile(transitConfigGroup.getVehiclesFile());
+		Vehicles filteredVehicles = VehicleUtils.createVehiclesContainer();
+		// filter vehicles
+		for (TransitLine line : filteredSchedule.getTransitLines().values()) {
+			for (TransitRoute route : line.getRoutes().values()) {
+				for (Departure departure : route.getDepartures().values()) {
+					Vehicle vehicleToKeep = inputVehicles.getVehicles().get(departure.getVehicleId());
+					if (!filteredVehicles.getVehicleTypes().containsValue(vehicleToKeep.getType())) {
+						filteredVehicles.addVehicleType(vehicleToKeep.getType());
+					}
+					filteredVehicles.addVehicle(vehicleToKeep);
+				}
+			}
+		}
+		// write vehicles
+		new VehicleWriterV1(filteredVehicles).writeFile(outputPath + "vehicles.xml.gz");
+	}
+
+	private TransitSchedule filterTransitSchedule(TransitConfigGroup transitConfigGroup) {
+		// load schedule
+		Scenario scenario = ScenarioUtils.createScenario(ConfigUtils.createConfig());
+		new TransitScheduleReader(scenario).readFile(transitConfigGroup.getTransitScheduleFile());
+		TransitSchedule inputSchedule = scenario.getTransitSchedule();
+		TransitSchedule filteredSchedule =
+				ScenarioUtils.createScenario(ConfigUtils.createConfig()).getTransitSchedule();
+		// filter schedule (all lines in area plus all trains)
+		for (TransitLine transitLine : inputSchedule.getTransitLines().values()) {
+			for (TransitRoute transitRoute : transitLine.getRoutes().values()) {
+				for (TransitRouteStop transitStop : transitRoute.getStops()) {
+					if (inArea(transitStop.getStopFacility().getCoord())
+							|| transitRoute.getTransportMode().equals("rail")) {
+						Id<TransitLine> newLineId = addLine(filteredSchedule, transitLine);
+						filteredSchedule.getTransitLines().get(newLineId).addRoute(transitRoute);
+						addStopFacilities(filteredSchedule, transitRoute);
+						break;
+					}
+				}
+			}
+		}
+		// write schedule
+		new TransitScheduleWriter(filteredSchedule).writeFile(outputPath + "schedule.xml.gz");
+		return filteredSchedule;
+	}
+
+	private void addStopFacilities(TransitSchedule schedule, TransitRoute transitRoute) {
+		for (TransitRouteStop newStop : transitRoute.getStops()) {
+			if (!schedule.getFacilities().containsKey(newStop.getStopFacility().getId())) {
+				schedule.addStopFacility(newStop.getStopFacility());
+			}
 		}
 	}
 
-	private void copyNetwork(NetworkConfigGroup networkConfigGroup) throws IOException {
-		Files.copy(Paths.get(networkConfigGroup.getInputFile()),
-				Paths.get(outputPath + "network.xml.gz"));
+	private Id<TransitLine> addLine(TransitSchedule schedule, TransitLine transitLine) {
+		Id<TransitLine> newLineId = Id.create(transitLine.getId().toString(), TransitLine.class);
+		if (!schedule.getTransitLines().containsKey(newLineId)) {
+			TransitLine newLine = schedule.getFactory().createTransitLine(newLineId);
+			schedule.addTransitLine(newLine);
+			newLine.setName(transitLine.getName());
+		}
+		return newLineId;
 	}
 
-	private void copyVehicles(TransitConfigGroup transitConfigGroup) throws IOException {
-		Files.copy(Paths.get(transitConfigGroup.getVehiclesFile()),
-				Paths.get(outputPath + "vehicles.xml.gz"));
+	private ActivityFacilities filterFacilities(FacilitiesConfigGroup facilities, Population filteredPopulation) {
+		// load facilities
+		ActivityFacilities inputFacilities =
+				FacilityUtils.readFacilities(facilities.getInputFile());
+		ActivityFacilities filteredFacilities = new ActivityFacilitiesImpl();
+		Set<Id<ActivityFacility>> popFacilities = getPopFacilities(filteredPopulation);
+		// filter facilities
+		Counter counter = new Counter(" facility # ");
+		for (ActivityFacility facility : inputFacilities.getFacilities().values()) {
+			counter.incCounter();
+			if (popFacilities.contains(facility.getId()) || inArea(facility.getCoord())) {
+				filteredFacilities.addActivityFacility(facility);
+			}
+		}
+		counter.printCounter();
+		// return facilities
+		return filteredFacilities;
 	}
 
-	private void copyTransitSchedule(TransitConfigGroup transitConfigGroup) throws IOException {
-			Files.copy(Paths.get(transitConfigGroup.getTransitScheduleFile()),
-					Paths.get(outputPath + "schedule.xml.gz"));
-	}
-
-	private void copyFacilities(FacilitiesConfigGroup facilitiesConfigGroup) throws IOException {
-		Files.copy(Paths.get(facilitiesConfigGroup.getInputFile()),
-				Paths.get(outputPath + "facilities.xml.gz"));
+	private Set<Id<ActivityFacility>> getPopFacilities(Population filteredPopulation) {
+		Set<Id<ActivityFacility>> popFacilities = new HashSet<>();
+		for (Person person : filteredPopulation.getPersons().values()) {
+			for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
+				if (pe instanceof Activity) {
+					Activity act = (Activity) pe;
+					popFacilities.add(act.getFacilityId());
+				}
+			}
+		}
+		return popFacilities;
 	}
 
 	private void filterHouseholds(HouseholdsConfigGroup householdsConfigGroup, Population filteredPopulation) {
@@ -177,8 +327,9 @@ public class DiluteBaseline {
 				outputPath + "households_attributes.xml.gz");
 	}
 
-	private Population filterPopulation(Population inputPopulation) {
+	private Population filterPopulation(PlansConfigGroup plansConfigGroup) {
 		// load population
+		Population inputPopulation = loadAndRouteInputPopulation(plansConfigGroup);
 		Population filteredPopulation = PopulationUtils.getEmptyPopulation();
 		// filter population
 		Counter counter = new Counter(" person # ");

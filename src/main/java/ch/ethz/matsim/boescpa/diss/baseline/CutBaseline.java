@@ -96,7 +96,7 @@ public class CutBaseline {
 		CutBaseline cutter = new CutBaseline(pathToSHPFile, pathToOutputFolder);
 
 		// cut demand:
-		Population filteredPopulation = cutter.filterPopulation(config.plans());
+		Population filteredPopulation = cutter.filterPopulation(config.plans(), config.facilities());
 		cutter.filterHouseholds(config.households(), filteredPopulation);
 		ActivityFacilities filteredFacilities = cutter.filterFacilities(config.facilities(), filteredPopulation);
 
@@ -307,8 +307,10 @@ public class CutBaseline {
 				outputPath + "households_attributes.xml.gz");
 	}
 
-	private Population filterPopulation(PlansConfigGroup plansConfigGroup) {
-		// load population
+	private Population filterPopulation(PlansConfigGroup plansConfigGroup, FacilitiesConfigGroup facilities) {
+		// load population and facilities
+		ActivityFacilities activityFacilities =
+				FacilityUtils.readFacilities(facilities.getInputFile());
 		Population inputPopulation = PopulationUtils.readPopulation(plansConfigGroup.getInputFile());
 		new ObjectAttributesXmlReader(inputPopulation.getPersonAttributes())
 				.readFile(plansConfigGroup.getInputPersonAttributeFile());
@@ -317,7 +319,7 @@ public class CutBaseline {
 		Counter counter = new Counter(" person # ");
 		for (Person person : inputPopulation.getPersons().values()) {
 			counter.incCounter();
-			if (isFullyInArea(person)) {
+			if (isFullyInArea(person, activityFacilities)) {
 				filteredPopulation.addPerson(person);
 				for (String attribute : ObjectAttributesUtils.getAllAttributeNames(
 								inputPopulation.getPersonAttributes(), person.getId().toString())) {
@@ -335,12 +337,12 @@ public class CutBaseline {
 		return filteredPopulation;
 	}
 
-	private boolean isFullyInArea(Person person) {
+	private boolean isFullyInArea(Person person, ActivityFacilities activityFacilities) {
 		if (person.getSelectedPlan() != null) {
 			for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
 				if (pe instanceof Activity) {
 					Activity act = (Activity) pe;
-					if (!inArea(act.getCoord())) {
+					if (!inArea(activityFacilities.getFacilities().get(act.getFacilityId()).getCoord())) {
 						return false;
 					}
 				}
