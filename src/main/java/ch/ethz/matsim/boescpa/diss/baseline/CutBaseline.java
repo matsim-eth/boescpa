@@ -131,7 +131,8 @@ public class CutBaseline {
 		// filter only-car-network
 		Network onlyCarNetwork = org.matsim.core.network.NetworkUtils.createNetwork();
 		for (Link link : inputNetwork.getLinks().values()) {
-			if (scheduleLinks.contains(link.getId()) || inArea(link.getFromNode().getCoord()) || inArea(link.getToNode().getCoord())) {
+			if (link.getAllowedModes().contains("car")
+					&& (inArea(link.getFromNode().getCoord()) || inArea(link.getToNode().getCoord()))) {
 				addLink(onlyCarNetwork, link);
 			}
 		}

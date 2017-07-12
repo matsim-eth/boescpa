@@ -111,7 +111,7 @@ public class DiluteBaselineLight {
 		DiluteBaselineLight diluter = new DiluteBaselineLight(config, pathToSHPFile, pathToOutputFolder);
 
 		// cut demand:
-		Population filteredPopulation = diluter.filterPopulation(config.plans());
+		Population filteredPopulation = diluter.filterPopulation(config.plans(), config.facilities());
 		diluter.filterHouseholds(config.households(), filteredPopulation);
 		ActivityFacilities filteredFacilities = diluter.filterFacilities(config.facilities(), filteredPopulation);
 
@@ -146,10 +146,10 @@ public class DiluteBaselineLight {
 		// filter only-car-network
 		Network onlyCarNetwork = org.matsim.core.network.NetworkUtils.createNetwork();
 		for (Link link : inputNetwork.getLinks().values()) {
-			if (scheduleLinks.contains(link.getId()) // keep all pt links
-					|| link.getCapacity() >= 1000 // keep all arterial links
+			if (link.getAllowedModes().contains("car") && (
+					link.getCapacity() >= 1000 // keep all arterial links
 					|| inArea(link.getFromNode().getCoord())
-					|| inArea(link.getToNode().getCoord())) {
+					|| inArea(link.getToNode().getCoord()))) {
 				addLink(onlyCarNetwork, link);
 			}
 		}
@@ -327,8 +327,9 @@ public class DiluteBaselineLight {
 				outputPath + "households_attributes.xml.gz");
 	}
 
-	private Population filterPopulation(PlansConfigGroup plansConfigGroup) {
-		// load population
+	private Population filterPopulation(PlansConfigGroup plansConfigGroup, FacilitiesConfigGroup facilities) {
+		// load population and facilities
+		ActivityFacilities activityFacilities = FacilityUtils.readFacilities(facilities.getInputFile());
 		Population inputPopulation = loadAndRouteInputPopulation(plansConfigGroup);
 		Population filteredPopulation = PopulationUtils.getEmptyPopulation();
 		// filter population
@@ -341,7 +342,7 @@ public class DiluteBaselineLight {
 				for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
 					if (pe instanceof Activity) {
 						Activity act = (Activity) pe;
-						if (inArea(act.getCoord())) {
+						if (inArea(activityFacilities.getFacilities().get(act.getFacilityId()).getCoord())) {
 							actInArea = true;
 						} else {
 							actNotInArea = true;
