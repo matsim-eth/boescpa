@@ -137,10 +137,11 @@ public class TripEventHandler implements PersonDepartureEventHandler, PersonArri
 
 	@Override
 	final public void handleEvent(ActivityStartEvent event) {
-		// do not add activity if it's a pt interaction
-		if (!event.getActType().equals("pt interaction")) {
-            Id<Person> personId = event.getPersonId();
-            handleTripEnd(personId, stageEndLinkId.get(personId), stageEndTime.get(personId), event.getActType());
+		// do not add activity if it's a pt or AV interaction or if the "person" is an av-vehicle
+		if (!event.getActType().equals("pt interaction")
+				&& !event.getActType().contains("AV") && !event.getPersonId().toString().contains("av")) {
+			Id<Person> personId = event.getPersonId();
+			handleTripEnd(personId, stageEndLinkId.get(personId), stageEndTime.get(personId), event.getActType());
 		}
 	}
 

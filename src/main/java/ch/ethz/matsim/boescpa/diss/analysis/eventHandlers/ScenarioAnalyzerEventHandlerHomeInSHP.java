@@ -29,14 +29,14 @@ import com.vividsolutions.jts.geom.Geometry;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.TransportMode;
-import org.matsim.api.core.v01.population.*;
-import org.matsim.core.utils.geometry.CoordUtils;
+import org.matsim.api.core.v01.population.Activity;
+import org.matsim.api.core.v01.population.Person;
+import org.matsim.api.core.v01.population.PlanElement;
+import org.matsim.api.core.v01.population.Population;
 import org.matsim.core.utils.gis.ShapeFileReader;
 import org.opengis.feature.simple.SimpleFeature;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -49,6 +49,7 @@ public abstract class ScenarioAnalyzerEventHandlerHomeInSHP extends ScenarioAnal
     protected static int ANALYSIS_END_TIME = 108000; // default 30h
 	private static final boolean EXCLUDEPT = true;
 	private static final boolean EXCLUDEFREIGHT = true;
+	private static final boolean EXCLUDEAV = true;
 	private final Population population;
 	private final CoordAnalyzer coordAnalyzer;
 
@@ -74,9 +75,10 @@ public abstract class ScenarioAnalyzerEventHandlerHomeInSHP extends ScenarioAnal
 	public abstract String createResults(SpatialCutter spatialEventCutter, int scaleFactor);
 
 	@Override
-	protected boolean isPersonToConsider(Id<Person> personId) {
+	public boolean isPersonToConsider(Id<Person> personId) {
 		return (!EXCLUDEPT || !personId.toString().contains(TransportMode.pt))
 				&& (!EXCLUDEFREIGHT || !personId.toString().contains("freight"))
+				&& (!EXCLUDEAV || !personId.toString().contains("av"))
 				&& personHomeInArea(personId);
 	}
 
