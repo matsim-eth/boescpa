@@ -48,8 +48,9 @@ public class RunScenarioAnalyzerOnHomeInSHP {
 			ScenarioAnalyzerEventHandlerHomeInSHP[] handlers = {
 					new AgentCounter(path2HomesSHP, population, network),
 					new TripAnalyzer(path2HomesSHP, population, network),
-					new TripActivityCrosscorrelator(path2HomesSHP, population, network),
-					new MFDCreator(path2HomesSHP, population, network)
+					//new TripActivityCrosscorrelator(path2HomesSHP, population, network),
+					//new MFDCreator(path2HomesSHP, population, network),
+					new TargetFunctionEvaluator(path2HomesSHP, population, network)
 			};
 			ScenarioAnalyzer scenarioAnalyzer = new ScenarioAnalyzer(path2EventFile, scaleFactor, handlers);
 			scenarioAnalyzer.analyzeScenario();
