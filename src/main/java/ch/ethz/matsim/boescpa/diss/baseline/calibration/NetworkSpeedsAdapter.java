@@ -35,11 +35,11 @@ public class NetworkSpeedsAdapter {
 
 	public static void main(final String[] args) {
 		Network network = NetworkUtils.readNetwork(args[0]);
-		double speedReduction = Double.parseDouble(args[1])/3.6; // reduction in [km/h]
+		double speedReduction = Double.parseDouble(args[1])/100; // reduction in percentage
 
 		for (Link link : network.getLinks().values()) {
 			if (link.getAllowedModes().contains("car"))
-				link.setFreespeed(link.getFreespeed() - speedReduction);
+				link.setFreespeed(link.getFreespeed()*(1 - speedReduction));
 		}
 
 		new NetworkWriter(network).write("network_"+args[1]+"PrctReducedSpeed.xml.gz");
