@@ -42,7 +42,7 @@ public class NetworkSpeedsAdapter {
 				link.setFreespeed(link.getFreespeed() - speedReduction);
 		}
 
-		new NetworkWriter(network).write("network_reducedSpeed.xml.gz");
+		new NetworkWriter(network).write("network_"+args[1]+"PrctReducedSpeed.xml.gz");
 	}
 
 }
