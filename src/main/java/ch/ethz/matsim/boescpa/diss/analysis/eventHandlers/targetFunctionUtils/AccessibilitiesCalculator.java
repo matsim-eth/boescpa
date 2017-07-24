@@ -32,11 +32,12 @@ import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
 import org.matsim.core.utils.collections.Tuple;
 import org.matsim.facilities.ActivityFacilities;
+import org.matsim.facilities.ActivityFacility;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.ScenarioAnalyzer.DEL;
+import static ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.ScenarioAnalyzer.NL;
 
 /**
  * WHAT IS IT FOR?
@@ -44,26 +45,28 @@ import java.util.Map;
  * @author boescpa
  */
 public class AccessibilitiesCalculator implements PersonDepartureEventHandler, PersonArrivalEventHandler{
-	private final static int GRID_CELL_SIZE = 100; // in meters
-	private final static int MIN_NUMBER_OF_OBSERVATIONS_TO_BE_CONSIDERED = 10;
-	// Peak hours for departures to count as peak trips.
-	private final static Tuple<Double, Double> MORNING_PEAK = new Tuple<>(6.0*3600, 8.0*3600);
-	private final static Tuple<Double, Double> EVENING_PEAK = new Tuple<>(16.5*3600, 18.5*3600);
-
 	private final TargetFunctionEvaluator targetFunctionEvaluator;
 	private final Network network;
-	private final ActivityFacilities facilities;
+	private final Map<String, Double> opportunities;
 
 	private final Map<String, Tuple<Double, String>> personsOnTheWay;
-	private final Map<String, Map<String, List<Double>>> travelTimesPerZonePairForDifferentModes_Total;
-	private final Map<String, Map<String, List<Double>>> travelTimesPerZonePairForDifferentModes_Peak;
-	private final Map<String, Map<String, List<Double>>> travelTimesPerZonePairForDifferentModes_OffPeak;
+	private final Map<String, Map<Tuple<String, String>, List<Double>>> travelTimesPerZonePairForDifferentModes_Total;
+	private final Map<String, Map<Tuple<String, String>, List<Double>>> travelTimesPerZonePairForDifferentModes_Peak;
+	private final Map<String, Map<Tuple<String, String>, List<Double>>> travelTimesPerZonePairForDifferentModes_OffPeak;
+	private final AccessibilitiesCalculatorConfig config;
 
 	public AccessibilitiesCalculator(TargetFunctionEvaluator targetFunctionEvaluator, Network network,
 									 ActivityFacilities facilities) {
+		this(new AccessibilitiesCalculatorConfig(), targetFunctionEvaluator, network, facilities);
+	}
+
+	public AccessibilitiesCalculator(AccessibilitiesCalculatorConfig config,
+									 TargetFunctionEvaluator targetFunctionEvaluator, Network network,
+									 ActivityFacilities facilities) {
+		this.config = config;
 		this.targetFunctionEvaluator = targetFunctionEvaluator;
 		this.network = network;
-		this.facilities = facilities;
+		this.opportunities = calculateOpportunities(facilities);
 
 		this.personsOnTheWay = new HashMap<>();
 		this.travelTimesPerZonePairForDifferentModes_Total = new HashMap<>();
@@ -73,8 +76,77 @@ public class AccessibilitiesCalculator implements PersonDepartureEventHandler, P
 		this.reset(0);
 	}
 
+	/**
+	 * Calculates opportunities for each grid-cell based on opportunities specified in config.
+	 */
+	private Map<String, Double> calculateOpportunities(ActivityFacilities facilities) {
+		Map<String, Double> opportunities = new HashMap<>();
+		for (ActivityFacility facility : facilities.getFacilities().values()) {
+			String gridCell = getGridCell(facility.getLinkId());
+			double opportunity = opportunities.getOrDefault(gridCell, 0.);
+			for (String opportunityMode : config.getOpportunityActivities()) {
+				if (facility.getActivityOptions().containsKey(opportunityMode)) {
+					opportunity += facility.getActivityOptions().get(opportunityMode).getCapacity();
+				}
+			}
+			opportunities.put(gridCell, opportunity);
+		}
+		return opportunities;
+	}
+
 	public String createResults(int scaleFactor) {
-		return null;
+		String results = "Total accessibilities:" + NL;
+		Map<String, Map<String, Double>> totalAccessibilities = calculateAccessibilities(
+				scaleFactor, this.travelTimesPerZonePairForDifferentModes_Total);
+		results += getAccessibilityString(totalAccessibilities);
+		results += NL + "Peak accessibilities:" + NL;
+		Map<String, Map<String, Double>> peakAccessibilities = calculateAccessibilities(
+				scaleFactor, this.travelTimesPerZonePairForDifferentModes_Peak);
+		results += getAccessibilityString(peakAccessibilities);
+		results += NL + "Offpeak accessibilities: " + NL;
+		Map<String, Map<String, Double>> offpeakAccessibilities = calculateAccessibilities(
+				scaleFactor, this.travelTimesPerZonePairForDifferentModes_OffPeak);
+		results += getAccessibilityString(offpeakAccessibilities);
+		return results;
+	}
+
+	private String getAccessibilityString(Map<String, Map<String, Double>> accessibilities) {
+		String accessibilityString = "";
+		for (String mode : accessibilities.keySet()) {
+			double avgAccMode = accessibilities.get(mode).values().stream().mapToDouble(a -> a).filter(a -> a > 0).average().orElse(0.);
+			accessibilityString += NL + mode + DEL + avgAccMode + NL;
+			for (String gridCell : accessibilities.get(mode).keySet()) {
+				accessibilityString += gridCell + DEL + accessibilities.get(mode).get(gridCell) + DEL;
+			}
+		}
+		return accessibilityString + NL;
+	}
+
+	private Map<String, Map<String, Double>> calculateAccessibilities(int scaleFactor,
+			Map<String, Map<Tuple<String, String>, List<Double>>> travelTimesPerZonePairForDifferentModes) {
+		List<String> modesToEvaluate = config.getModesToEvaluate();
+		List<Double> modesToEvaluateDeterrenceFunctionBetas = config.getModesToEvaluateDeterrenceFunctionBetas();
+		Map<String, Map<String, Double>> accessibilities = new HashMap<>();
+		for (String mode : travelTimesPerZonePairForDifferentModes.keySet()) {
+			if (modesToEvaluate.contains(mode)) {
+				double modeBeta = modesToEvaluateDeterrenceFunctionBetas.get(modesToEvaluate.indexOf(mode));
+				Map<Tuple<String, String>, List<Double>> travelTimes =
+						travelTimesPerZonePairForDifferentModes.get(mode);
+				Map<String, Double> modeAccessibilities = new HashMap<>();
+				for (Tuple<String, String> fromTo : travelTimes.keySet()) {
+					if (travelTimes.get(fromTo).size() >= config.getMinObservationsToBeConsidered()) {
+						double accessibility = modeAccessibilities.getOrDefault(fromTo.getFirst(), 0.);
+						double avgTravelTime = travelTimes.get(fromTo)
+								.stream().mapToDouble(a -> a).average().orElse(0.);
+						accessibility += scaleFactor *
+								opportunities.getOrDefault(fromTo.getSecond(), 0.) * Math.exp(-modeBeta * avgTravelTime);
+						modeAccessibilities.put(fromTo.getFirst(), accessibility);
+					}
+				}
+				accessibilities.put(mode, modeAccessibilities);
+			}
+		}
+		return accessibilities;
 	}
 
 	public void reset(int i) {
@@ -99,30 +171,33 @@ public class AccessibilitiesCalculator implements PersonDepartureEventHandler, P
 	@Override
 	public void handleEvent(PersonArrivalEvent personArrivalEvent) {
 		String personId = personArrivalEvent.getPersonId().toString();
-		if (!this.personsOnTheWay.keySet().contains(personId)) {
-			throw new RuntimeException("Person " + personId + " arrived without ever having started!");
+		if (targetFunctionEvaluator.isPersonToConsider(personArrivalEvent.getPersonId())) {
+			if (!this.personsOnTheWay.keySet().contains(personId)) {
+				throw new RuntimeException("Person " + personId + " arrived without ever having started!");
+			}
+			String from = this.personsOnTheWay.get(personId).getSecond();
+			String to = getGridCell(personArrivalEvent.getLinkId());
+			String mode = personArrivalEvent.getLegMode();
+			double departureTime = this.personsOnTheWay.get(personId).getFirst();
+			double travelTime = personArrivalEvent.getTime() - departureTime;
+			addNewTravelTime(this.travelTimesPerZonePairForDifferentModes_Total, mode, from, to, travelTime);
+			if ((config.getMorningPeak().getFirst() <= departureTime && departureTime <= config.getMorningPeak().getSecond())
+					|| (config.getEveningPeak().getFirst() <= departureTime && departureTime <= config.getEveningPeak().getSecond())) {
+				addNewTravelTime(this.travelTimesPerZonePairForDifferentModes_Peak, mode, from, to, travelTime);
+			} else {
+				addNewTravelTime(this.travelTimesPerZonePairForDifferentModes_OffPeak, mode, from, to, travelTime);
+			}
+			this.personsOnTheWay.remove(personId);
 		}
-		String fromTo = this.personsOnTheWay.get(personId).getSecond() + "_-_"
-				+ getGridCell(personArrivalEvent.getLinkId());
-		String mode = personArrivalEvent.getLegMode();
-		double departureTime = this.personsOnTheWay.get(personId).getFirst();
-		double travelTime = personArrivalEvent.getTime() - departureTime;
-		addNewTravelTime(this.travelTimesPerZonePairForDifferentModes_Total, mode, fromTo, travelTime);
-		if ((MORNING_PEAK.getFirst() <= departureTime && departureTime <= MORNING_PEAK.getSecond())
-			|| (EVENING_PEAK.getFirst() <= departureTime && departureTime <= EVENING_PEAK.getSecond())) {
-			addNewTravelTime(this.travelTimesPerZonePairForDifferentModes_Peak, mode, fromTo, travelTime);
-		} else {
-			addNewTravelTime(this.travelTimesPerZonePairForDifferentModes_OffPeak, mode, fromTo, travelTime);
-		}
-		this.personsOnTheWay.remove(personId);
 	}
 
 	private void addNewTravelTime(
-			Map<String, Map<String, List<Double>>> travelTimesPerZonePairForDifferentModes,
-								  String mode, String fromTo, double travelTime) {
+			Map<String, Map<Tuple<String, String>, List<Double>>> travelTimesPerZonePairForDifferentModes,
+								  String mode, String from, String to, double travelTime) {
 		if (!travelTimesPerZonePairForDifferentModes.containsKey(mode)) {
 			travelTimesPerZonePairForDifferentModes.put(mode, new HashMap<>());
 		}
+		Tuple<String, String> fromTo = new Tuple<>(from, to);
 		if (!travelTimesPerZonePairForDifferentModes.get(mode).containsKey(fromTo)) {
 			travelTimesPerZonePairForDifferentModes.get(mode).put(fromTo, new ArrayList<>());
 		}
@@ -131,8 +206,10 @@ public class AccessibilitiesCalculator implements PersonDepartureEventHandler, P
 
 	private String getGridCell(Id<Link> linkId) {
 		Node fromNode = this.network.getLinks().get(linkId).getFromNode();
-		long x = (long)(fromNode.getCoord().getX()/ GRID_CELL_SIZE); // floor x-coord to next grid cell size
-		long y = (long)(fromNode.getCoord().getY()/ GRID_CELL_SIZE); // floor y-coord to next grid cell size
+		// floor x-coord to next grid cell size
+		long x = (long)(fromNode.getCoord().getX()/config.getGridCellSize());
+		// floor y-coord to next grid cell size
+		long y = (long)(fromNode.getCoord().getY()/config.getGridCellSize());
 		return x + "_" + y;
 	}
 }
