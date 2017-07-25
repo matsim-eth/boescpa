@@ -23,19 +23,13 @@ package ch.ethz.matsim.boescpa.diss.analysis.eventHandlers;
 
 import ch.ethz.matsim.boescpa.analysis.spatialCutters.SpatialCutter;
 import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.targetFunctionUtils.AccessibilitiesCalculator;
-import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.targetFunctionUtils.VehicleKilometerCounter;
-import org.matsim.api.core.v01.Id;
+import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.targetFunctionUtils.KilometerCounter;
 import org.matsim.api.core.v01.events.*;
 import org.matsim.api.core.v01.events.handler.*;
-import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.Population;
 import org.matsim.facilities.ActivityFacilities;
 
-import java.util.Map;
-import java.util.TreeMap;
-
-import static ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.ScenarioAnalyzer.DEL;
 import static ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.ScenarioAnalyzer.NL;
 
 /**
@@ -44,15 +38,16 @@ import static ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.ScenarioAnalyzer.
  * @author boescpa
  */
 public class TargetFunctionEvaluator extends ScenarioAnalyzerEventHandlerHomeInSHP
-		implements LinkLeaveEventHandler, PersonDepartureEventHandler, PersonArrivalEventHandler {
+		implements LinkLeaveEventHandler, PersonDepartureEventHandler, PersonArrivalEventHandler,
+		PersonEntersVehicleEventHandler, PersonLeavesVehicleEventHandler {
 
-	private final VehicleKilometerCounter vehicleKilometerCounter;
+	private final KilometerCounter vehicleKilometerCounter;
 	private final AccessibilitiesCalculator accessibilitiesCalculator;
 
 	public TargetFunctionEvaluator(String path2HomesSHP, Population population, Network network,
 								   ActivityFacilities facilities) {
 		super(path2HomesSHP, population);
-		this.vehicleKilometerCounter = new VehicleKilometerCounter(this, network);
+		this.vehicleKilometerCounter = new KilometerCounter(this, network);
 		this.accessibilitiesCalculator = new AccessibilitiesCalculator(this, network, facilities);
 		this.reset(0);
 	}
@@ -83,5 +78,15 @@ public class TargetFunctionEvaluator extends ScenarioAnalyzerEventHandlerHomeInS
 	@Override
 	public void handleEvent(PersonDepartureEvent personDepartureEvent) {
 		accessibilitiesCalculator.handleEvent(personDepartureEvent);
+	}
+
+	@Override
+	public void handleEvent(PersonEntersVehicleEvent personEntersVehicleEvent) {
+		vehicleKilometerCounter.handleEvent(personEntersVehicleEvent);
+	}
+
+	@Override
+	public void handleEvent(PersonLeavesVehicleEvent personLeavesVehicleEvent) {
+		vehicleKilometerCounter.handleEvent(personLeavesVehicleEvent);
 	}
 }
