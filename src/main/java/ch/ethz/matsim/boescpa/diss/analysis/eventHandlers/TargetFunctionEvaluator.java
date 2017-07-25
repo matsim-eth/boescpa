@@ -89,4 +89,22 @@ public class TargetFunctionEvaluator extends ScenarioAnalyzerEventHandlerHomeInS
 	public void handleEvent(PersonLeavesVehicleEvent personLeavesVehicleEvent) {
 		vehicleKilometerCounter.handleEvent(personLeavesVehicleEvent);
 	}
+
+	// ****************************************************************************************
+	// In Sim Outputs:
+
+	public void createInSimResults() {
+		vehicleKilometerCounter.createInSimResults();
+		accessibilitiesCalculator.createInSimResults();
+	}
+
+	public void prepareForInSimResults(String outputFilePath, double countsScaleFactor) {
+		vehicleKilometerCounter.prepareForInSimResults(outputFilePath, countsScaleFactor);
+		accessibilitiesCalculator.prepareForInSimResults(outputFilePath, countsScaleFactor);
+	}
+
+	public void closeFiles() {
+		vehicleKilometerCounter.closeFiles();
+		accessibilitiesCalculator.closeFiles();
+	}
 }

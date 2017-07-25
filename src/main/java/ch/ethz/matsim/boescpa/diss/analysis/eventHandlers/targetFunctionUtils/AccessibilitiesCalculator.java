@@ -30,10 +30,16 @@ import org.matsim.api.core.v01.events.handler.PersonDepartureEventHandler;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
+import org.matsim.core.utils.charts.XYLineChart;
 import org.matsim.core.utils.collections.Tuple;
+import org.matsim.core.utils.io.IOUtils;
 import org.matsim.facilities.ActivityFacilities;
 import org.matsim.facilities.ActivityFacility;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.*;
 
 import static ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.ScenarioAnalyzer.DEL;
@@ -54,6 +60,9 @@ public class AccessibilitiesCalculator implements PersonDepartureEventHandler, P
 	private final Map<String, Map<Tuple<String, String>, List<Double>>> travelTimesPerZonePairForDifferentModes_Peak;
 	private final Map<String, Map<Tuple<String, String>, List<Double>>> travelTimesPerZonePairForDifferentModes_OffPeak;
 	private final AccessibilitiesCalculatorConfig config;
+	private int iteration;
+
+	private final DecimalFormat df;
 
 	public AccessibilitiesCalculator(TargetFunctionEvaluator targetFunctionEvaluator, Network network,
 									 ActivityFacilities facilities) {
@@ -74,6 +83,9 @@ public class AccessibilitiesCalculator implements PersonDepartureEventHandler, P
 		this.travelTimesPerZonePairForDifferentModes_OffPeak = new HashMap<>();
 
 		this.reset(0);
+
+		this.df = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+		this.df.setMaximumFractionDigits(340);
 	}
 
 	/**
@@ -114,15 +126,15 @@ public class AccessibilitiesCalculator implements PersonDepartureEventHandler, P
 		String accessibilityString = "";
 		for (String mode : accessibilities.keySet()) {
 			double avgAccMode = accessibilities.get(mode).values().stream().mapToDouble(a -> a).filter(a -> a > 0).average().orElse(0.);
-			accessibilityString += NL + mode + DEL + avgAccMode + NL;
+			accessibilityString += NL + mode + DEL + df.format(avgAccMode) + NL;
 			for (String gridCell : accessibilities.get(mode).keySet()) {
-				accessibilityString += gridCell + DEL + accessibilities.get(mode).get(gridCell) + DEL;
+				accessibilityString += gridCell + DEL + df.format(accessibilities.get(mode).get(gridCell)) + DEL;
 			}
 		}
 		return accessibilityString + NL;
 	}
 
-	private Map<String, Map<String, Double>> calculateAccessibilities(int scaleFactor,
+	private Map<String, Map<String, Double>> calculateAccessibilities(double scaleFactor,
 			Map<String, Map<Tuple<String, String>, List<Double>>> travelTimesPerZonePairForDifferentModes) {
 		List<String> modesToEvaluate = config.getModesToEvaluate();
 		List<Double> modesToEvaluateDeterrenceFunctionBetas = config.getModesToEvaluateDeterrenceFunctionBetas();
@@ -150,6 +162,7 @@ public class AccessibilitiesCalculator implements PersonDepartureEventHandler, P
 	}
 
 	public void reset(int i) {
+		this.iteration = i;
 		this.personsOnTheWay.clear();
 		this.travelTimesPerZonePairForDifferentModes_Total.clear();
 		this.travelTimesPerZonePairForDifferentModes_Peak.clear();
@@ -211,5 +224,105 @@ public class AccessibilitiesCalculator implements PersonDepartureEventHandler, P
 		// floor y-coord to next grid cell size
 		long y = (long)(fromNode.getCoord().getY()/config.getGridCellSize());
 		return x + "_" + y;
+	}
+
+	// ****************************************************************************************
+	// In Sim Outputs:
+
+	private BufferedWriter inSimResultsWriter_Total;
+	private BufferedWriter inSimResultsWriter_Peak;
+	private BufferedWriter inSimResultsWriter_Offpeak;
+	private Map<String, Map<Integer, Double>> totalHistory;
+	private double countsScaleFactor;
+	private String pathPNG;
+
+	public void prepareForInSimResults(String outputFilePath, double countsScaleFactor) {
+		this.countsScaleFactor = countsScaleFactor;
+		String header = "it" + DEL + "mode" + DEL + "OD-pairs and accessibilities";
+		this.inSimResultsWriter_Total =
+				IOUtils.getBufferedWriter(outputFilePath + "accessibilities_total.csv");
+		this.inSimResultsWriter_Peak =
+				IOUtils.getBufferedWriter(outputFilePath + "accessibilities_peak.csv");
+		this.inSimResultsWriter_Offpeak =
+				IOUtils.getBufferedWriter(outputFilePath + "accessibilities_offpeak.csv");
+		try {
+			this.inSimResultsWriter_Total.write(header);
+			this.inSimResultsWriter_Total.flush();
+			this.inSimResultsWriter_Peak.write(header);
+			this.inSimResultsWriter_Peak.flush();
+			this.inSimResultsWriter_Offpeak.write(header);
+			this.inSimResultsWriter_Offpeak.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		// prepare history map
+		totalHistory = new HashMap<>();
+		for (String mode : config.getModesToEvaluate()) {
+			totalHistory.put(mode, new HashMap<>());
+		}
+		this.pathPNG = outputFilePath + "accessibilities_total";
+	}
+
+	public void createInSimResults() {
+		Map<String, Map<String, Double>> totalAccessibilities = calculateAccessibilities(
+				this.countsScaleFactor, this.travelTimesPerZonePairForDifferentModes_Total);
+		updateHistory(totalAccessibilities);
+		Map<String, Map<String, Double>> peakAccessibilities = calculateAccessibilities(
+				this.countsScaleFactor, this.travelTimesPerZonePairForDifferentModes_Peak);
+		Map<String, Map<String, Double>> offpeakAccessibilities = calculateAccessibilities(
+				this.countsScaleFactor, this.travelTimesPerZonePairForDifferentModes_OffPeak);
+		// write results
+		try {
+			inSimResultsWriter_Total.write(getInSimResults(totalAccessibilities));
+			inSimResultsWriter_Total.flush();
+			inSimResultsWriter_Peak.write(getInSimResults(peakAccessibilities));
+			inSimResultsWriter_Peak.flush();
+			inSimResultsWriter_Offpeak.write(getInSimResults(offpeakAccessibilities));
+			inSimResultsWriter_Offpeak.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		// plot graphs
+		if (this.iteration > 0) {
+			XYLineChart chart = new XYLineChart("Average Accessibilities", "iteration", "mode");
+			for (String mode : this.totalHistory.keySet()) {
+				Map<Integer, Double> modeHistory = this.totalHistory.get(mode);
+				chart.addSeries(mode, modeHistory);
+			}
+			chart.saveAsPng(this.pathPNG + ".png", 800, 600);
+		}
+	}
+
+	private void updateHistory(Map<String, Map<String, Double>> totalAccessibilities) {
+		for (String mode : config.getModesToEvaluate()) {
+			double avgAccMode = 0.;
+			if (totalAccessibilities.keySet().contains(mode)) {
+				avgAccMode = totalAccessibilities.get(mode).values().stream().mapToDouble(a -> a).filter(a -> a > 0).average().orElse(0.);
+			}
+			this.totalHistory.get(mode).put(this.iteration, avgAccMode);
+		}
+	}
+
+	private String getInSimResults(Map<String, Map<String, Double>> accessibilities) {
+		String accessibilityString = "";
+		for (String mode : accessibilities.keySet()) {
+			accessibilityString += NL;
+			double avgAccMode = accessibilities.get(mode).values().stream().mapToDouble(a -> a).filter(a -> a > 0).average().orElse(0.);
+			accessibilityString += this.iteration + DEL + mode + DEL + df.format(avgAccMode) + DEL;
+			for (String gridCell : accessibilities.get(mode).keySet()) {
+				accessibilityString += gridCell + DEL + df.format(accessibilities.get(mode).get(gridCell)) + DEL;
+			}
+		}
+		return accessibilityString;
+	}
+
+	public void closeFiles() {
+		try {
+			inSimResultsWriter_Total.close();
+			inSimResultsWriter_Peak.close();
+			inSimResultsWriter_Offpeak.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

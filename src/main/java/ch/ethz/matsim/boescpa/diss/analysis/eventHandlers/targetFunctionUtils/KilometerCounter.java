@@ -177,4 +177,16 @@ public class KilometerCounter implements LinkLeaveEventHandler, PersonEntersVehi
 			}
 		}
 	}
+
+	public void prepareForInSimResults(String outputFilePath, double countsScaleFactor) {
+
+	}
+
+	public void createInSimResults() {
+
+	}
+
+	public void closeFiles() {
+
+	}
 }
