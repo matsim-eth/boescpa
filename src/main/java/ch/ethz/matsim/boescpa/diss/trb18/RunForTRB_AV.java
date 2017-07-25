@@ -21,12 +21,18 @@
 
 package ch.ethz.matsim.boescpa.diss.trb18;
 
+import ch.ethz.matsim.av.framework.AVConfigGroup;
+import ch.ethz.matsim.av.framework.AVModule;
+import ch.ethz.matsim.av.framework.AVQSimProvider;
 import ch.ethz.matsim.boescpa.diss.analysis.InSimAnalyzerHomeInSHPTargetFunction;
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorConfigGroup;
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorStrategyModule;
 import ch.ethz.matsim.boescpa.diss.baseline.scoring.IVTBaselineScoringModule;
 import com.google.inject.name.Names;
 import org.matsim.api.core.v01.Scenario;
+import org.matsim.contrib.dvrp.run.DvrpConfigGroup;
+import org.matsim.contrib.dvrp.trafficmonitoring.VrpTravelTimeModules;
+import org.matsim.contrib.dynagent.run.DynQSimModule;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.controler.AbstractModule;
@@ -40,26 +46,26 @@ import java.net.MalformedURLException;
  *
  * @author boescpa
  */
-public class RunForTRB {
+public class RunForTRB_AV {
 
 	public static void main(String[] args) throws MalformedURLException {
 		String configFile = args[0];
 		String pathToSHP = args[1];
 
 		// Configuration
-		//DvrpConfigGroup dvrpConfigGroup = new DvrpConfigGroup();
-		//dvrpConfigGroup.setTravelTimeEstimationAlpha(0.05);
+		DvrpConfigGroup dvrpConfigGroup = new DvrpConfigGroup();
+		dvrpConfigGroup.setTravelTimeEstimationAlpha(0.05);
 		Config config = ConfigUtils.loadConfig(configFile,
-				//new AVConfigGroup(), dvrpConfigGroup, // AV-modules
+				new AVConfigGroup(), dvrpConfigGroup, // AV-modules
 				new BlackListedTimeAllocationMutatorConfigGroup()); // IVT-Modules
 		Scenario scenario = ScenarioUtils.loadScenario(config);
 
 		// Controller setup
 		Controler controler = new Controler(scenario);
 		//	Add AV modules
-		//controler.addOverridingModule(VrpTravelTimeModules.createTravelTimeEstimatorModule());
-		//controler.addOverridingModule(new DynQSimModule<>(AVQSimProvider.class));
-		//controler.addOverridingModule(new AVModule());
+		controler.addOverridingModule(VrpTravelTimeModules.createTravelTimeEstimatorModule());
+		controler.addOverridingModule(new DynQSimModule<>(AVQSimProvider.class));
+		controler.addOverridingModule(new AVModule());
 		//	Add IVT modules
 		controler.addOverridingModule(new BlackListedTimeAllocationMutatorStrategyModule());
 		controler.addOverridingModule(new IVTBaselineScoringModule());
