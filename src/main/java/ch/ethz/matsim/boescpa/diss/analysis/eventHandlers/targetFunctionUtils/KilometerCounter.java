@@ -221,10 +221,10 @@ public class KilometerCounter implements LinkLeaveEventHandler, PersonEntersVehi
 		updateHistory();
 		// write stats (from iteration 10 on...)
 		//	Reason for it.10: Assumption that by this time every vehicle type is used at least once...
-		if (this.iteration > 1) { //9) {
+		if (this.iteration > 9) {
 			try {
 				// headers and setup in 10th iteration:
-				if (this.iteration == 2) { //10) {
+				if (this.iteration == 10) {
 					this.modesOutputet = new ArrayList<>();
 					String header = "it";
 					for (String vehicleType : this.vehicleKmHistory.keySet()) {
