@@ -46,8 +46,7 @@ public class VehicleKilometerCounter implements LinkLeaveEventHandler {
 
 	private Map<String, Double> vehicleKilometersDriven;
 
-	private final String ptBus = "pt-bus", ptOther = "pt-other", avTaxi = "av-taxi", avPool = "av-pool",
-			car = "car", freight = "freight";
+	private final String ptBus = "pt_bus", ptOther = "pt_other", car = "car", freight = "freight";
 
 	public VehicleKilometerCounter(TargetFunctionEvaluator targetFunctionEvaluator, Network network) {
 		this.targetFunctionEvaluator = targetFunctionEvaluator;
@@ -58,12 +57,6 @@ public class VehicleKilometerCounter implements LinkLeaveEventHandler {
 	@Override
 	public void reset(int i) {
 		this.vehicleKilometersDriven = new TreeMap<>();
-		this.vehicleKilometersDriven.put(ptBus, 0.);
-		this.vehicleKilometersDriven.put(ptOther, 0.);
-		this.vehicleKilometersDriven.put(avTaxi, 0.);
-		this.vehicleKilometersDriven.put(avPool, 0.);
-		this.vehicleKilometersDriven.put(car, 0.);
-		this.vehicleKilometersDriven.put(freight, 0.);
 	}
 
 	public String createResults(int scaleFactor) {
@@ -81,13 +74,8 @@ public class VehicleKilometerCounter implements LinkLeaveEventHandler {
 		String vehicleId = linkLeaveEvent.getVehicleId().toString();
 		Id<Link> linkId = linkLeaveEvent.getLinkId();
 		if (vehicleId.contains("av")) { // its an av-vehicle
-			if (vehicleId.contains("taxi")) {
-				addVKM(avTaxi, linkId);
-			} else if (vehicleId.contains("pool")) {
-				addVKM(avPool, linkId);
-			} else {
-				throw new RuntimeException("Undefined AV-mode: " + vehicleId);
-			}
+			String serviceType = vehicleId.substring(vehicleId.indexOf("_")+1, vehicleId.lastIndexOf("_"));
+			addVKM(serviceType, linkId);
 		} else if (vehicleId.contains("freight")) { // its a truck
 			addVKM(freight, linkId);
 		} else if (!vehicleId.contains("_") || vehicleId.contains("cb")) { // its a car
@@ -104,7 +92,7 @@ public class VehicleKilometerCounter implements LinkLeaveEventHandler {
 	}
 
 	private void addVKM(String type, Id<Link> linkId) {
-		double vehicleKilometer = this.vehicleKilometersDriven.get(type);
+		double vehicleKilometer = this.vehicleKilometersDriven.getOrDefault(type,0.);
 		vehicleKilometer += this.network.getLinks().get(linkId).getLength();
 		this.vehicleKilometersDriven.put(type, vehicleKilometer);
 	}
