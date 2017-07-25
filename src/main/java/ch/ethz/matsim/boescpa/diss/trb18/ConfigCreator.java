@@ -26,8 +26,11 @@ import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.ConfigWriter;
 import org.matsim.core.utils.collections.Tuple;
+import org.matsim.core.utils.io.IOUtils;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -38,7 +41,8 @@ import java.util.List;
  */
 public class ConfigCreator {
 	private final String inputConfigPath;
-	private final String outputPath;
+	private String outputPath;
+	private String eulerCommands = "module load new" + "\n" + "module load java";
 
 	public ConfigCreator(String inputConfig, String outputPath) {
 		this.inputConfigPath = inputConfig;
@@ -46,74 +50,103 @@ public class ConfigCreator {
 	}
 
 	public static void main(final String[] args) {
-		final String inputConfigPath = args[1];
-		final String outputPath = args[2];
+		final String inputConfigPath = args[0];
+		final String outputPath = args[1];
 		ConfigCreator configCreator = new ConfigCreator(inputConfigPath, outputPath);
 		configCreator.createConfigs();
+		configCreator.writeShell();
 	}
 
 	private void createConfigs() {
 		Config inputConfig = ConfigUtils.loadConfig(inputConfigPath);
 		for (double aPTprice : new double[]{1.00, 0.50, 0.00}) {
-			List<Tuple<String, Config>> tempConfigs = null;
 			for (double aMITprice : new double[]{1.00, 1.25}) {
-				for (String votMIT : new String[]{"none", "pt", "plus"}) {
+				for (String votMIT : new String[]{"car", "pt", "pt_plus"}) {
+					List<Tuple<String, Config>> tempConfigs = null;
 					switch (votMIT) {
-						case "none":
+						case "car":
 							tempConfigs = createNewConfigs(aPTprice, aMITprice,
 									inputConfig.planCalcScore().getModes()
-											.get("car").getMarginalUtilityOfTraveling());
+											.get("car").getMarginalUtilityOfTraveling(), votMIT);
 							break;
 						case "pt":
 							tempConfigs = createNewConfigs(aPTprice, aMITprice,
 									inputConfig.planCalcScore().getModes()
-											.get("pt").getMarginalUtilityOfTraveling());
+											.get("pt").getMarginalUtilityOfTraveling(), votMIT);
 							break;
-						case "plus":
+						case "pt_plus":
 							tempConfigs = createNewConfigs(aPTprice, aMITprice,
 									inputConfig.planCalcScore().getModes()
-											.get("pt").getMarginalUtilityOfTraveling()*0.75);
+											.get("pt").getMarginalUtilityOfTraveling()*0.75, votMIT);
 							break;
 					}
+					for (Tuple<String, Config> tempConfig : tempConfigs) {
+						new ConfigWriter(tempConfig.getSecond()).write(
+								outputPath + tempConfig.getFirst());
+						eulerCommands += "\n" + "bsub -n 4 -W 12:00 -R \"rusage[mem=10240]\" "
+								+ "java -Xmx40g -server -cp ../../boescpa-0.1.0/boescpa-0.1.0.jar "
+								+ "ch.ethz.matsim.boescpa.diss.trb18.RunForTRB "
+								+ tempConfig.getFirst()
+								+ " ../../scenario/siedlungsraum_zug_shp/siedlungsraum_zug.shp";
+					}
 				}
-			}
-			for (Tuple<String, Config> tempConfig : tempConfigs) {
-				new ConfigWriter(tempConfig.getSecond()).write(outputPath + tempConfig.getFirst());
 			}
 		}
 	}
 
-	private List<Tuple<String, Config>> createNewConfigs(double aPTprice, double aMITprice, double votMIT) {
+	private void writeShell() {
+		BufferedWriter writer = IOUtils.getBufferedWriter(this.outputPath + "run.sh");
+		try {
+			writer.write(eulerCommands);
+			writer.flush();
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private List<Tuple<String, Config>> createNewConfigs(double aPTprice, double aMITprice, double votMIT,
+														 String votMITName) {
 		List<Tuple<String, Config>> newConfigs = new LinkedList<>();
 		for (String avType : new String[]{
-				"none"}) { //, "mon_pub_tax", "mon_pub_rs", "mon_priv_tax", "mon_priv_rs", "oligo"}) {
-			createAVConfig(avType);
+				"none"}) {
+				//"mon_pub_tax"}) {
+				//"mon_pub_rs"}) {
+				//"mon_priv_tax"}) {
+				//"mon_priv_rs"}) {
+				//"oligo"}) {
 			Config config = ConfigUtils.loadConfig(inputConfigPath);
+			// make basic policy implementations
 			config.planCalcScore().getModes().get("pt").setMonetaryDistanceRate(
 					config.planCalcScore().getModes().get("pt").getMonetaryDistanceRate()*aPTprice);
 			config.planCalcScore().getModes().get("car").setMonetaryDistanceRate(
 					config.planCalcScore().getModes().get("car").getMonetaryDistanceRate()*aMITprice);
 			config.planCalcScore().getModes().get("car").setMarginalUtilityOfTraveling(votMIT);
-			AVConfigGroup avConfigGroup = new AVConfigGroup();
-			avConfigGroup.setConfigPath("av.xml");
-			config.addModule(avConfigGroup);
-			String runString = getNameString(aPTprice, aMITprice, votMIT, avType);
+			// create AV-stuff
+			if (!avType.equals("none")) {
+				createAVConfig(avType);
+				AVConfigGroup avConfigGroup = new AVConfigGroup();
+				avConfigGroup.setConfigPath("av.xml");
+				config.addModule(avConfigGroup);
+			}
+			// other customizations for each run
+			String runString = getNameString(aPTprice, aMITprice, votMITName, avType);
 			config.controler().setRunId(runString);
+			config.controler().setOutputDirectory("/cluster/work/ivt_vpl/pboesch/trb18/output_" + runString);
 			newConfigs.add(new Tuple<>("config_-_" + runString + ".xml", config));
 		}
 		return newConfigs;
 	}
 
-	private String getNameString(double aPTprice, double aMITprice, double votMIT, String avType) {
-		return aPTprice + "_" + aMITprice + "_" + votMIT + "_" + avType;
+	private String getNameString(double aPTprice, double aMITprice, String votMITName, String avType) {
+		return aPTprice + "_" + aMITprice + "_" + votMITName + "_" + avType;
 	}
 
 	private void createAVConfig(String avType) {
 		String outputPath = this.outputPath + "av.xml";
 		switch (avType) {
 			case "none":
-				// do nothing
-				break;
+				break; // do nothing
 			case "mon_pub_tax":
 				// TO IMPLEMENT...
 				break;
