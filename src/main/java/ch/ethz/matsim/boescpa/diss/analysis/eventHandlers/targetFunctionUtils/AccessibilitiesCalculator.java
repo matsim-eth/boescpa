@@ -146,10 +146,19 @@ public class AccessibilitiesCalculator implements PersonDepartureEventHandler, P
 						travelTimesPerZonePairForDifferentModes.get(mode);
 				Map<String, Double> modeAccessibilities = new HashMap<>();
 				for (Tuple<String, String> fromTo : travelTimes.keySet()) {
+					// for each od-pair, if the sample is large enough, ...
 					if (travelTimes.get(fromTo).size() >= config.getMinObservationsToBeConsidered()) {
-						double accessibility = modeAccessibilities.getOrDefault(fromTo.getFirst(), 0.);
+						// ... we get the accessibility already stored for this origin from other od-pairs...
+						double accessibility = modeAccessibilities.getOrDefault(fromTo.getFirst(),
+								// if nothing is stored (a.k.a. we look at this origin for the first time,
+								// we take its self-accessibility, which is all its own opportunities,
+								// and only if this is also not available, we take zero as it self-accessibility.
+								opportunities.getOrDefault(fromTo.getFirst(), 0.));
+						// ... we calculate the average travel time for this od-pair ...
 						double avgTravelTime = travelTimes.get(fromTo)
 								.stream().mapToDouble(a -> a).average().orElse(0.);
+						// ... we calculate the accessibility and add it to the total accessibility
+						// of this origin.
 						accessibility += scaleFactor *
 								opportunities.getOrDefault(fromTo.getSecond(), 0.) * Math.exp(-modeBeta * avgTravelTime);
 						modeAccessibilities.put(fromTo.getFirst(), accessibility);
