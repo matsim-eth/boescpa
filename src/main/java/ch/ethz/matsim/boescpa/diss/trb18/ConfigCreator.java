@@ -41,18 +41,21 @@ import java.util.List;
  */
 public class ConfigCreator {
 	private final String inputConfigPath;
+	private final String inputAVConfigPath;
 	private String outputPath;
 	private String eulerCommands = "module load new" + "\n" + "module load java";
 
-	public ConfigCreator(String inputConfig, String outputPath) {
+	public ConfigCreator(String inputConfig, String inputAVConfigPath, String outputPath) {
 		this.inputConfigPath = inputConfig;
+		this.inputAVConfigPath = inputAVConfigPath;
 		this.outputPath = outputPath + File.separator;
 	}
 
 	public static void main(final String[] args) {
 		final String inputConfigPath = args[0];
-		final String outputPath = args[1];
-		ConfigCreator configCreator = new ConfigCreator(inputConfigPath, outputPath);
+		final String inputAVConfigPath = args[1];
+		final String outputPath = args[2];
+		ConfigCreator configCreator = new ConfigCreator(inputConfigPath, inputAVConfigPath, outputPath);
 		configCreator.createConfigs();
 		configCreator.writeShell();
 	}
@@ -112,8 +115,11 @@ public class ConfigCreator {
 	private List<Tuple<String, Config>> createNewConfigs(double aPTprice, double aMITprice, double votMIT,
 														 String votMITName) {
 		List<Tuple<String, Config>> newConfigs = new LinkedList<>();
-		for (String avType : new String[]{"none"}) {//, "mon_tax", "mon_rs", "oligo"}) {
-			Config config = ConfigUtils.loadConfig(inputConfigPath);
+		for (String avType : new String[]{//"none",
+				"mon_tax", "mon_rs", "oligo"}) {
+			Config config = avType.equals("none") ?
+					ConfigUtils.loadConfig(inputConfigPath) :
+					ConfigUtils.loadConfig(inputAVConfigPath);
 			// make basic policy implementations
 			config.planCalcScore().getModes().get("pt").setMonetaryDistanceRate(
 					config.planCalcScore().getModes().get("pt").getMonetaryDistanceRate()*aPTprice);
@@ -124,12 +130,14 @@ public class ConfigCreator {
 			if (!avType.equals("none")) {
 				AVConfigGroup avConfigGroup = new AVConfigGroup();
 				avConfigGroup.setConfigPath("../scenario/av_configs/av_" + avType + ".xml");
+				avConfigGroup.setParallelRouters(8L);
 				config.addModule(avConfigGroup);
 			}
 			// other customizations for each run
 			String runString = getNameString(aPTprice, aMITprice, votMITName, avType);
 			config.controler().setRunId(runString);
 			config.controler().setOutputDirectory("/cluster/work/ivt_vpl/pboesch/trb18/output_" + runString);
+			config.qsim().setTimeStepSize(5);
 			newConfigs.add(new Tuple<>("config_-_" + runString + ".xml", config));
 		}
 		return newConfigs;
