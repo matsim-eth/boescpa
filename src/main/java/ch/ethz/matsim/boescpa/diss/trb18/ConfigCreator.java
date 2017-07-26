@@ -83,11 +83,15 @@ public class ConfigCreator {
 					for (Tuple<String, Config> tempConfig : tempConfigs) {
 						new ConfigWriter(tempConfig.getSecond()).write(
 								outputPath + tempConfig.getFirst());
-						eulerCommands += "\n" + "bsub -n 4 -W 12:00 -R \"rusage[mem=10240]\" "
-								+ "java -Xmx40g -server -cp ../../boescpa-0.1.0/boescpa-0.1.0.jar "
-								+ "ch.ethz.matsim.boescpa.diss.trb18.RunForTRB "
-								+ tempConfig.getFirst()
-								+ " ../../scenario/siedlungsraum_zug_shp/siedlungsraum_zug.shp";
+						eulerCommands += "\n" + "bsub -n 8 -W ";
+						eulerCommands += tempConfig.getFirst().contains("none") ? "20:00 " : "24:00 ";
+						eulerCommands += "-R \"rusage[mem=2560]\" "
+								+ "java -Xmx20g -server -cp ../boescpa-0.1.0/boescpa-0.1.0.jar ";
+						eulerCommands += tempConfig.getFirst().contains("none")	?
+								"ch.ethz.matsim.boescpa.diss.trb18.RunForTRB " :
+								"ch.ethz.matsim.boescpa.diss.trb18.RunForTRB_AV ";
+						eulerCommands += tempConfig.getFirst()
+									+ " ../scenario/siedlungsraum_zug_shp/siedlungsraum_zug.shp";
 					}
 				}
 			}
@@ -108,13 +112,7 @@ public class ConfigCreator {
 	private List<Tuple<String, Config>> createNewConfigs(double aPTprice, double aMITprice, double votMIT,
 														 String votMITName) {
 		List<Tuple<String, Config>> newConfigs = new LinkedList<>();
-		for (String avType : new String[]{
-				"none"}) {
-				//"mon_pub_tax"}) {
-				//"mon_pub_rs"}) {
-				//"mon_priv_tax"}) {
-				//"mon_priv_rs"}) {
-				//"oligo"}) {
+		for (String avType : new String[]{"none"}) {//, "mon_tax", "mon_rs", "oligo"}) {
 			Config config = ConfigUtils.loadConfig(inputConfigPath);
 			// make basic policy implementations
 			config.planCalcScore().getModes().get("pt").setMonetaryDistanceRate(
@@ -124,9 +122,8 @@ public class ConfigCreator {
 			config.planCalcScore().getModes().get("car").setMarginalUtilityOfTraveling(votMIT);
 			// create AV-stuff
 			if (!avType.equals("none")) {
-				createAVConfig(avType);
 				AVConfigGroup avConfigGroup = new AVConfigGroup();
-				avConfigGroup.setConfigPath("av.xml");
+				avConfigGroup.setConfigPath("../scenario/av_configs/av_" + avType + ".xml");
 				config.addModule(avConfigGroup);
 			}
 			// other customizations for each run
@@ -141,21 +138,4 @@ public class ConfigCreator {
 	private String getNameString(double aPTprice, double aMITprice, String votMITName, String avType) {
 		return aPTprice + "_" + aMITprice + "_" + votMITName + "_" + avType;
 	}
-
-	private void createAVConfig(String avType) {
-		String outputPath = this.outputPath + "av.xml";
-		switch (avType) {
-			case "none":
-				break; // do nothing
-			case "mon_pub_tax":
-				// TO IMPLEMENT...
-				break;
-			case "usw":
-				// TO IMPLEMENT...
-				break;
-		}
-
-	}
-
-
 }
