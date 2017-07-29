@@ -143,7 +143,7 @@ public class ConfigCreator {
 		return newConfigs;
 	}
 
-	private String getNameString(double aPTprice, double aMITprice, String votMITName, String avType) {
+	static String getNameString(double aPTprice, double aMITprice, String votMITName, String avType) {
 		return aPTprice + "_" + aMITprice + "_" + votMITName + "_" + avType;
 	}
 }
