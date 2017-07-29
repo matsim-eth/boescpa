@@ -63,8 +63,8 @@ public class RunEvaluation {
 		String pathToRunFolders = args[0];
 
 		RunEvaluation runEvaluation = new RunEvaluation(pathToRunFolders);
-		runEvaluation.readTestFiles();
-		//runEvaluation.readAllFiles();
+		//runEvaluation.readTestFiles();
+		runEvaluation.readAllFiles();
 	}
 
 	private void readTestFiles() {
@@ -96,8 +96,7 @@ public class RunEvaluation {
 
 	private void readFilesAndCreateOutput(double aPTprice, double aMITprice, String votMIT, String avType) throws IOException {
 		String name = getNameString(aPTprice, aMITprice, votMIT, avType);
-		String filePaths = this.pathToRunFolders + File.separator + "output_" + name +
-				File.separator + name + ".";
+		String filePaths = this.pathToRunFolders + File.separator + name + File.separator + name + ".";
 		String pathNumPassengers = filePaths + "passenger_km.csv";
 		Map<String, Double> modeSplit = getModeSplit(pathNumPassengers);
 		String pathAccessibilities = filePaths + "accessibilities_total.csv";
