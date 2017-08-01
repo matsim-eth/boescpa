@@ -72,6 +72,7 @@ public class networkToSHP {
 				addAttribute("length", Double.class).
 				addAttribute("capacity", Double.class).
 				addAttribute("freespeed", Double.class).
+				addAttribute("modes", String.class).
 				create();
 
 		// transform network
@@ -86,8 +87,9 @@ public class networkToSHP {
 							link.getToNode().getId().toString(),
 							link.getLength(),
 							link.getCapacity(),
-							link.getFreespeed()},
-					null);
+							link.getFreespeed(),
+							link.getAllowedModes()},
+							null);
 			features.add(ft);
 		}
 		ShapeFileWriter.writeGeometries(features, pathToOutputFolder + "network_links.shp");

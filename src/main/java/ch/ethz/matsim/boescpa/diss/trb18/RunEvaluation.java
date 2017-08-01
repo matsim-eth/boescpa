@@ -47,8 +47,11 @@ public class RunEvaluation {
 		this.writer = IOUtils.getBufferedWriter(pathToRunFolders + File.separator
 				+ "summaryTRB18.csv");
 		String header = "runID" + SEP + "aPTprice" + SEP + "aMITprice" + SEP + "votMIT" + SEP + "avType"
-				+ SEP + "avgAccessibility" + SEP + "totVKM" + SEP + "avMonProfitable" + SEP + "MScar"
-				+ SEP + "MSpt" + SEP + "MSav";
+				+ SEP + "avgAccessibility" + SEP + "totVKM" + SEP + "avMonProfitable"
+				+ SEP + "MScar" + SEP + "MSpt" + SEP + "MSav"
+				+ SEP + "PassAnzcar" + SEP + "PassAnzpt" + SEP + "PassAnzav"
+				+ SEP + "PassKMcar" + SEP + "PassKMpt" + SEP + "PassKMav"
+				+ SEP + "VehKMcar" + SEP + "VehKMpt" + SEP + "VehKMav";
 		System.out.print(header + "\n");
 		try {
 			this.writer.write(header);
@@ -94,11 +97,12 @@ public class RunEvaluation {
 		}
 	}
 
-	private void readFilesAndCreateOutput(double aPTprice, double aMITprice, String votMIT, String avType) throws IOException {
+	private void readFilesAndCreateOutput(double aPTprice, double aMITprice, String votMIT, String avType)
+			throws IOException {
 		String name = getNameString(aPTprice, aMITprice, votMIT, avType);
 		String filePaths = this.pathToRunFolders + File.separator + name + File.separator + name + ".";
-		String pathNumPassengers = filePaths + "passenger_km.csv";
-		Map<String, Double> modeSplit = getModeSplit(pathNumPassengers);
+		String pathKmPassengers = filePaths + "passenger_km.csv";
+		Map<String, Double> modeSplit = getModeSplit(pathKmPassengers);
 		String pathAccessibilities = filePaths + "accessibilities_total.csv";
 		double avgAccessibility = getAvgAccessibility(pathAccessibilities, modeSplit);
 		String pathVKM = filePaths + "vehicle_km.csv";
@@ -111,14 +115,30 @@ public class RunEvaluation {
 				getProfitability(pathVKM, pathPassengerKM, 0.32, 0.61);
 		String categorization =
 				getCategorizationString(aPTprice, aMITprice, votMIT, avType);
+		String pathNumPassengers = filePaths + "passenger_anz.csv";
+		Map<String, Double> passAnz = getModeVals(pathNumPassengers);
+		Map<String, Double> passKM = getModeVals(pathKmPassengers);
+		Map<String, Double> vehKM = getModeVals(pathVKM);
 		// write output
 		String outputString = categorization + SEP + avgAccessibility + SEP + totVKM
-				+ SEP + avMonProfitable + SEP + modeSplit.get("car")
-				+ SEP + modeSplit.get("pt") + SEP + modeSplit.get("av");
+				+ SEP + avMonProfitable
+				+ SEP + modeSplit.get("car") + SEP + modeSplit.get("pt") + SEP + modeSplit.get("av")
+				+ SEP + passAnz.get("car") + SEP + passAnz.get("pt") + SEP + passAnz.get("av")
+				+ SEP + passKM.get("car") + SEP + passKM.get("pt") + SEP + passKM.get("av")
+				+ SEP + vehKM.get("car") + SEP + vehKM.get("pt") + SEP + vehKM.get("av");
 		this.writer.write(outputString);
 		this.writer.newLine();
 		this.writer.flush();
 		System.out.print(outputString + "\n");
+	}
+
+	private Map<String, Double> getModeVals(String filePath) throws IOException {
+		Map<String, Double> evalResult = evaluateFile(filePath);
+		Map<String, Double> modeVals = new HashMap<>();
+		modeVals.put("car", evalResult.get("car"));
+		modeVals.put("pt", evalResult.get("pt"));
+		modeVals.put("av", evalResult.get("av"));
+		return modeVals;
 	}
 
 	private Map<String, Double> getModeSplit(String pathPassengerKM) throws IOException {
