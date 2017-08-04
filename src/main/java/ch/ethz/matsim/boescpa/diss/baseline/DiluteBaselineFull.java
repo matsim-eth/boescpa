@@ -276,7 +276,7 @@ public class DiluteBaselineFull {
 					ActivityFacility origin =
 							facilities.getFacilities().get(trip.getOriginActivity().getFacilityId());
 					ActivityFacility destination =
-							facilities.getFacilities().get(trip.getOriginActivity().getFacilityId());
+							facilities.getFacilities().get(trip.getDestinationActivity().getFacilityId());
 					List<Leg> legs = trip.getLegsOnly();
 					if (legs.size() > 1) throw new IllegalStateException();
 					List<? extends PlanElement> result =
