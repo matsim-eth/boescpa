@@ -87,12 +87,12 @@ public class DiluteBaselineSuperLight {
 	private final Map<Coord, Boolean> coordCache = new HashMap<>();
 	private final CoordAnalyzer coordAnalyzer;
 	private final String outputPath;
-	private final Network network;
+	private final Network carNetwork;
 	private final ActivityFacilities facilities;
 
 	private DiluteBaselineSuperLight(Config config, String pathToSHPOfCutArea, String pathToOutputFolder) {
 		// load network
-		this.network = NetworkUtils.readNetwork(config.network().getInputFile());
+		this.carNetwork = getCarNetwork(NetworkUtils.readNetwork(config.network().getInputFile()));
 		this.facilities = FacilityUtils.readFacilities(config.facilities().getInputFile());
 		// Output path:
 		this.outputPath = pathToOutputFolder + File.separator;
@@ -163,24 +163,34 @@ public class DiluteBaselineSuperLight {
 		Set<Id<Link>> scheduleLinks = getScheduleLinks(filteredSchedule);
 		Set<Id<Link>> popLinks = getPopLinks(filteredPopulation);
 		// filter only-car-network in area
-		Network onlyCarNetwork = org.matsim.core.network.NetworkUtils.createNetwork();
-		for (Link link : inputNetwork.getLinks().values()) {
-			if ((link.getAllowedModes().contains("car")
-					&& (inArea(link.getFromNode().getCoord()) || inArea(link.getToNode().getCoord())))
+		Network onlyCarNetworkArea = org.matsim.core.network.NetworkUtils.createNetwork();
+		for (Link link : this.carNetwork.getLinks().values()) {
+			if (inArea(link.getFromNode().getCoord()) || inArea(link.getToNode().getCoord())
 					|| popLinks.contains(link.getId())) {
-				addLink(onlyCarNetwork, link);
+				addLink(onlyCarNetworkArea, link);
 			}
 		}
-		new NetworkCleaner().run(onlyCarNetwork);
+		new NetworkCleaner().run(onlyCarNetworkArea);
 		// filter network
 		for (Link link : inputNetwork.getLinks().values()) {
 			if (scheduleLinks.contains(link.getId())
-					|| onlyCarNetwork.getLinks().keySet().contains(link.getId())) {
+					|| onlyCarNetworkArea.getLinks().keySet().contains(link.getId())) {
 				addLink(filteredNetwork, link);
 			}
 		}
 		// write network
 		new NetworkWriter(filteredNetwork).write(outputPath + "network.xml.gz");
+		return onlyCarNetworkArea;
+	}
+
+	private Network getCarNetwork(Network network) {
+		Network onlyCarNetwork = org.matsim.core.network.NetworkUtils.createNetwork();
+		for (Link link : network.getLinks().values()) {
+			if (link.getAllowedModes().contains("car")) {
+				addLink(onlyCarNetwork, link);
+			}
+		}
+		new NetworkCleaner().run(onlyCarNetwork);
 		return onlyCarNetwork;
 	}
 
@@ -312,8 +322,40 @@ public class DiluteBaselineSuperLight {
 			}
 		}
 		counter.printCounter();
+		// deal with remote_home activities
+		dealWithRemoteHomeActs(filteredFacilities);
 		// return facilities
 		return filteredFacilities;
+	}
+
+	private void dealWithRemoteHomeActs(ActivityFacilities filteredFacilities) {
+		for (ActivityFacility facility : filteredFacilities.getFacilities().values()) {
+			if (facility.getActivityOptions().keySet().contains("remote_home")) {
+				// add home-acts (if missing) and correct their capacity by remote_home
+				double remoteHomeCap = facility.getActivityOptions().get("remote_home").getCapacity();
+				if (!facility.getActivityOptions().keySet().contains("home")) {
+					ActivityOption home = new ActivityOptionImpl("home");
+					home.setCapacity(remoteHomeCap);
+					facility.addActivityOption(home);
+					for (int i = 1; i < 16; i++) {
+						home = new ActivityOptionImpl("home_" + i);
+						home.setCapacity(remoteHomeCap);
+						facility.addActivityOption(home);
+					}
+				} else {
+					double homeCap = facility.getActivityOptions().get("home").getCapacity() + remoteHomeCap;
+					facility.getActivityOptions().get("home").setCapacity(homeCap);
+					for (int i = 1; i < 16; i++) {
+						facility.getActivityOptions().get("home_" + i).setCapacity(homeCap);
+					}
+				}
+				// remove remote_home-acts
+				facility.getActivityOptions().remove("remote_home");
+				for (int i = 1; i < 16; i++) {
+					facility.getActivityOptions().remove("remote_home_" + i);
+				}
+			}
+		}
 	}
 
 	private Set<Id<ActivityFacility>> getPopFacilities(Population filteredPopulation) {
@@ -418,8 +460,8 @@ public class DiluteBaselineSuperLight {
 							person.getId().toString(), "subpopulation") != null
 							&& !filteredPopulation.getPersonAttributes().getAttribute(
 							person.getId().toString(), "subpopulation").equals("freight")) {
-						filteredPopulation.getPersonAttributes().putAttribute(
-								person.getId().toString(), "subpopulation", null);
+						filteredPopulation.getPersonAttributes().removeAttribute(
+								person.getId().toString(), "subpopulation");
 					}
 					// tag if commuting to / from outside of area of interest
 					if (actNotInArea) {
@@ -446,7 +488,7 @@ public class DiluteBaselineSuperLight {
 				NetworkRoute route = (NetworkRoute) ((Leg) pe).getRoute();
 
 				for (Id<Link> linkId : route.getLinkIds()) {
-					if (inArea(this.network.getLinks().get(linkId).getCoord())) {
+					if (inArea(this.carNetwork.getLinks().get(linkId).getCoord())) {
 						routeIntersection = true;
 						break;
 					}
@@ -473,11 +515,11 @@ public class DiluteBaselineSuperLight {
 		TravelTime travelTime = new FreeSpeedTravelTime();
 		TravelDisutility travelDisutility = new OnlyTimeDependentTravelDisutility(travelTime);
 		PreProcessDijkstra preprocessDijkstra = new PreProcessDijkstra();
-		preprocessDijkstra.run(network);
+		preprocessDijkstra.run(carNetwork);
 		LeastCostPathCalculator leastCostPathCalculator =
-				new Dijkstra(network, travelDisutility, travelTime, preprocessDijkstra);
+				new Dijkstra(carNetwork, travelDisutility, travelTime, preprocessDijkstra);
 		RoutingModule routingModule =
-				new NetworkRoutingModule("car", population.getFactory(), network, leastCostPathCalculator);
+				new NetworkRoutingModule("car", population.getFactory(), carNetwork, leastCostPathCalculator);
 		MainModeIdentifier mainModeIdentifier = new MainModeIdentifierImpl();
 
 		Counter counter = new Counter(" initial routing # ");
@@ -491,7 +533,6 @@ public class DiluteBaselineSuperLight {
 							facilities.getFacilities().get(trip.getOriginActivity().getFacilityId());
 					ActivityFacility destination =
 							facilities.getFacilities().get(trip.getDestinationActivity().getFacilityId());
-					//System.out.println("Noch orig für dest beim Routing!");
 					List<Leg> legs = trip.getLegsOnly();
 					if (legs.size() > 1) throw new IllegalStateException();
 					List<? extends PlanElement> result =
