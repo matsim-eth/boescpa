@@ -324,8 +324,22 @@ public class DiluteBaselineSuperLight {
 		counter.printCounter();
 		// deal with remote_home activities
 		dealWithRemoteHomeActs(filteredFacilities);
+		// remove open-close-time for facilities which shouldn't have it
+		removeOpenCloseTimes(filteredFacilities);
 		// return facilities
 		return filteredFacilities;
+	}
+
+	private void removeOpenCloseTimes(ActivityFacilities filteredFacilities) {
+		for (ActivityFacility facility : filteredFacilities.getFacilities().values()) {
+			if (facility.getActivityOptions().keySet().contains("freight")) {
+				// remove opening times
+				((ActivityOptionImpl)facility.getActivityOptions().get("freight")).clearOpeningTimes();
+				for (int i = 1; i < 16; i++) {
+					((ActivityOptionImpl)facility.getActivityOptions().get("freight_" + i)).clearOpeningTimes();
+				}
+			}
+		}
 	}
 
 	private void dealWithRemoteHomeActs(ActivityFacilities filteredFacilities) {
@@ -419,6 +433,7 @@ public class DiluteBaselineSuperLight {
 		for (Person person : inputPopulation.getPersons().values()) {
 			counter.incCounter();
 			if (person.getSelectedPlan() != null) {
+				Activity firstAct = null; Activity lastAct = null;
 				actInArea = false; actNotInArea = false; previousActInArea = false; leg = null;
 				for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
 					if (pe instanceof Activity) {
@@ -426,6 +441,12 @@ public class DiluteBaselineSuperLight {
 						// remove all remote_home
 						if (act.getType().contains("remote_home")) {
 							act.setType(act.getType().substring(act.getType().indexOf("_")+1));
+						}
+						// make sure first and last act are of same type
+						if (firstAct == null) {
+							firstAct = act;
+						} else {
+							lastAct = act;
 						}
 						if (inArea(activityFacilities.getFacilities().get(act.getFacilityId()).getCoord())) {
 							actInArea = true;
@@ -447,13 +468,21 @@ public class DiluteBaselineSuperLight {
 						leg = (Leg) pe;
 					}
 				}
+				// make sure first and last act are of same type
+				if (lastAct != null && lastAct.getType().contains("home")) {
+					lastAct.setType(firstAct.getType());
+				}
 				if (actInArea || checkForRouteIntersection(person.getSelectedPlan())) {
 					filteredPopulation.addPerson(person);
 					// copy attribute
 					for (String attribute : ObjectAttributesUtils.getAllAttributeNames(
 							inputPopulation.getPersonAttributes(), person.getId().toString())) {
-						filteredPopulation.getPersonAttributes().putAttribute(person.getId().toString(), attribute,
-								inputPopulation.getPersonAttributes().getAttribute(person.getId().toString(), attribute));
+						String newAttributeName = attribute.contains("remote_home") ?
+								attribute.replace("remote_home", "home") : attribute;
+						filteredPopulation.getPersonAttributes().putAttribute(
+								person.getId().toString(), newAttributeName,
+								inputPopulation.getPersonAttributes().getAttribute(
+										person.getId().toString(), attribute));
 					}
 					// remove all tags except for "freight"
 					if (filteredPopulation.getPersonAttributes().getAttribute(

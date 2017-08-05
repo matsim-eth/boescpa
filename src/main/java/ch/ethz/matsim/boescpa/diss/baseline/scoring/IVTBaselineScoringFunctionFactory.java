@@ -83,21 +83,10 @@ public class IVTBaselineScoringFunctionFactory implements ScoringFunctionFactory
 		scoringFunctionAccumulator.addScoringFunction(
 				new BlackListedActivityScoringFunction(blackList,
 						new CharyparNagelActivityScoring(params, new FacilityOpeningIntervalCalculator(scenario.getActivityFacilities()))));
-		//		CharyparNagelActivityScoring warns if first activity of the day and last activity of the day are not equal.
-		//		As we have home and remote_home activities, this case occurs on intention very often in our scenarios.
-		//		Ergo we have to suppress this output or we will get GBs of logs...
-		Logger.getLogger( CharyparNagelActivityScoring.class ).setLevel( Level.ERROR );
+		//Logger.getLogger( CharyparNagelActivityScoring.class ).setLevel( Level.ERROR );
 
 		// legs
 		scoringFunctionAccumulator.addScoringFunction(new CharyparNagelLegScoring(params, scenario.getNetwork()));
-
-		// location choice
-		final DestinationChoiceBestResponseContext locationChoiceContext = (DestinationChoiceBestResponseContext)
-				scenario.getScenarioElement(DestinationChoiceBestResponseContext.ELEMENT_NAME);
-		if ( locationChoiceContext != null) {
-			scoringFunctionAccumulator.addScoringFunction(
-					new DestinationEspilonScoring(person, locationChoiceContext));
-		}
 
 		// other standard stuff
 		scoringFunctionAccumulator.addScoringFunction(new CharyparNagelMoneyScoring(params));
