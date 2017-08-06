@@ -459,8 +459,18 @@ public class DiluteBaselineSuperLight {
 							if (leg != null && leg.getMode().equals("pt")) {
 								leg.setMode(OUTAREA_PT);
 							} else if (!previousActInArea && leg != null && leg.getMode().equals("car")) {
-								leg.setRoute(null);
-								leg.setMode(OUTAREA_CAR);
+								NetworkRoute route = (NetworkRoute) leg.getRoute();
+								boolean routeIntersection = false;
+								for (Id<Link> linkId : route.getLinkIds()) {
+									if (inArea(this.carNetwork.getLinks().get(linkId).getCoord())) {
+										routeIntersection = true;
+										break;
+									}
+								}
+								if (!routeIntersection) {
+									leg.setRoute(null);
+									leg.setMode(OUTAREA_CAR);
+								}
 							}
 							previousActInArea = false;
 						}
