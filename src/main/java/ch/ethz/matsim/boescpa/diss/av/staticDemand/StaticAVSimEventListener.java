@@ -39,6 +39,7 @@ import java.util.Map;
 public class StaticAVSimEventListener implements PersonDepartureEventHandler, PersonArrivalEventHandler,
 		MobsimAfterSimStepListener {
 
+	// Idee: Pro Service eine passende StaticAVSim
 	private final Map<String, StaticAVSim> avSims;
 
 	@Inject
@@ -67,6 +68,8 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 			avSim.handlePendingRequests(mobsimAfterSimStepEvent.getSimulationTime());
 		}
 	}
+
+	// todo-boescpa: Writeout am richtigen Ort zu den korrekten Iterationen noch einbauen (v.a. bevor reset gerufen wird, denn dies würde alle Werte deleten...).
 
 	@Override
 	public void reset(int i) {
