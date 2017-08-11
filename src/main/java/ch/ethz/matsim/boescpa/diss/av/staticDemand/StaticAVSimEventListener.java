@@ -63,6 +63,7 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 	@Override
 	public void notifyMobsimAfterSimStep(MobsimAfterSimStepEvent mobsimAfterSimStepEvent) {
 		for (StaticAVSim avSim : avSims.values()) {
+			avSim.freeBlockedVehicles(mobsimAfterSimStepEvent.getSimulationTime());
 			avSim.handlePendingRequests(mobsimAfterSimStepEvent.getSimulationTime());
 		}
 	}

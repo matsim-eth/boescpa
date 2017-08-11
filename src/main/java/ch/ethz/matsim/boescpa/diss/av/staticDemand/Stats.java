@@ -44,6 +44,7 @@ public class Stats {
     public static final String delimiter = "; ";
 	private final Map<Id<Person>, AutonomousVehicle> vehiclesInUse;
 	private final List<AutonomousVehicle> availableVehicles;
+	private final Map<AutonomousVehicle, Double> vehicleBlockedUntil;
 
 	private List<StatRequest> statRequests = new ArrayList<>();
     private List<String> simStats = new ArrayList<>();
@@ -65,9 +66,10 @@ public class Stats {
     private double maxWaitingTimeAgents = 0; // seconds
 
 
-	public Stats(Map<Id<Person>,AutonomousVehicle> vehiclesInUse, List<AutonomousVehicle> availableVehicles) {
+	public Stats(Map<Id<Person>, AutonomousVehicle> vehiclesInUse, List<AutonomousVehicle> availableVehicles, Map<AutonomousVehicle, Double> vehicleBlockedUntil) {
 		this.vehiclesInUse = vehiclesInUse;
 		this.availableVehicles = availableVehicles;
+		this.vehicleBlockedUntil = vehicleBlockedUntil;
 		writeRecordStatsHeader();
 	}
 
@@ -187,7 +189,7 @@ public class Stats {
     private void composeResults() {
         simResults.add("RESULTS:");
         simResults.add(" - Total demand: " + totalDemand);
-        simResults.add(" - Total number of AVs: " + (this.vehiclesInUse.size() + this.availableVehicles.size()));
+        simResults.add(" - Total number of AVs: " + (this.vehiclesInUse.size() + this.availableVehicles.size() + this.vehicleBlockedUntil.size()));
         // Met demand:
         simResults.add("   ...........");
         simResults.add(" - Quick met demand: " + quickMetDemand);
@@ -241,6 +243,10 @@ public class Stats {
                 outVehicles.newLine();
             }
 			for (AutonomousVehicle vehicle : this.vehiclesInUse.values()) {
+				outVehicles.write(vehicle.getStats());
+				outVehicles.newLine();
+			}
+			for (AutonomousVehicle vehicle : this.vehicleBlockedUntil.keySet()) {
 				outVehicles.write(vehicle.getStats());
 				outVehicles.newLine();
 			}
