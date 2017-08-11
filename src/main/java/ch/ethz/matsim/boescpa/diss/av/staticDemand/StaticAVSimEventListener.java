@@ -29,6 +29,7 @@ import org.matsim.api.core.v01.events.handler.PersonDepartureEventHandler;
 import org.matsim.core.mobsim.framework.events.MobsimAfterSimStepEvent;
 import org.matsim.core.mobsim.framework.listeners.MobsimAfterSimStepListener;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -39,12 +40,12 @@ import java.util.Map;
 public class StaticAVSimEventListener implements PersonDepartureEventHandler, PersonArrivalEventHandler,
 		MobsimAfterSimStepListener {
 
-	// Idee: Pro Service eine passende StaticAVSim
+	// Idee: Pro Service eine passende StaticAVSim mit unterstützung von StaticAVConfig.
 	private final Map<String, StaticAVSim> avSims;
 
 	@Inject
 	public StaticAVSimEventListener() {
-
+		this.avSims = new HashMap<>();
 	}
 
 	@Override
