@@ -37,10 +37,7 @@ import org.matsim.api.core.v01.network.Node;
 import org.matsim.api.core.v01.population.*;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
-import org.matsim.core.config.groups.FacilitiesConfigGroup;
-import org.matsim.core.config.groups.HouseholdsConfigGroup;
-import org.matsim.core.config.groups.NetworkConfigGroup;
-import org.matsim.core.config.groups.PlansConfigGroup;
+import org.matsim.core.config.groups.*;
 import org.matsim.core.network.algorithms.NetworkCleaner;
 import org.matsim.core.population.routes.LinkNetworkRouteImpl;
 import org.matsim.core.population.routes.NetworkRoute;
@@ -52,6 +49,7 @@ import org.matsim.core.router.util.TravelDisutility;
 import org.matsim.core.router.util.TravelTime;
 import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.core.trafficmonitoring.FreeSpeedTravelTime;
+import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.core.utils.gis.ShapeFileReader;
 import org.matsim.core.utils.misc.Counter;
 import org.matsim.facilities.*;
@@ -125,20 +123,54 @@ public class DiluteBaselineSuperLight {
 
 		// repair scenario:
 		diluter.reconnectLostFacilities(filteredFacilities, onlyCarNetwork);
-		diluter.resetPop(filteredPopulation);
+		diluter.resetAndCorrectPop(filteredPopulation, config.plansCalcRoute());
 	}
 
-	private void resetPop(Population filteredPopulation) {
+	private void resetAndCorrectPop(Population filteredPopulation,
+									PlansCalcRouteConfigGroup plansCalcRouteConfigGroup) {
+		double maxWalkDist = 20*60*plansCalcRouteConfigGroup.getTeleportedModeSpeeds().get("walk")/
+				plansCalcRouteConfigGroup.getBeelineDistanceFactors().get("walk");
+		double maxBikeDist = 20*60*plansCalcRouteConfigGroup.getTeleportedModeSpeeds().get("bike")/
+				plansCalcRouteConfigGroup.getBeelineDistanceFactors().get("bike");
+
 		for (Person person : filteredPopulation.getPersons().values()) {
+			// reset all car legs so that they are newly initialized when the new sim starts
 			for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
 				if (pe instanceof Leg && ((Leg)pe).getMode().equals("car")) {
 					Leg leg = (Leg)pe;
 					leg.setRoute(null);
 				}
 			}
+			// for outAct, which is not allowed to change mode, change modes to "reasonable" modes
+			String subpop = (String)filteredPopulation.getPersonAttributes().getAttribute(
+					person.getId().toString(), "subpopulation");
+			if (subpop != null && subpop.equals("outAct")) {
+				Leg lastLeg = null;
+				ActivityFacility lastFacility = null;
+				for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
+					if (pe instanceof Activity) {
+						ActivityFacility thisFacility = this.facilities.getFacilities().get(
+								((Activity)pe).getFacilityId());
+						if (lastFacility != null && lastLeg != null && !lastLeg.getMode().equals("car")) {
+							double distance = CoordUtils.calcEuclideanDistance(
+									thisFacility.getCoord(), lastFacility.getCoord());
+							if (lastLeg.getMode().equals("walk") && (distance > maxWalkDist)) {
+								lastLeg.setMode("bike");
+							}
+							if (lastLeg.getMode().equals("bike") && (distance > maxBikeDist)) {
+								lastLeg.setMode(OUTAREA_PT);
+							}
+						}
+						lastFacility = thisFacility;
+					}
+					if (pe instanceof Leg) {
+						lastLeg = (Leg)pe;
+					}
+				}
+			}
 		}
-		new PopulationWriter(filteredPopulation).write(
-				outputPath + "population.xml.gz");
+
+		new PopulationWriter(filteredPopulation).write(outputPath + "population.xml.gz");
 	}
 
 	private void reconnectLostFacilities(ActivityFacilities filteredFacilities, Network onlyCarNetwork) {
