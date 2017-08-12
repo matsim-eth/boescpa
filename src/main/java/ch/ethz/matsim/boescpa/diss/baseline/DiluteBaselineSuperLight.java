@@ -43,10 +43,7 @@ import org.matsim.core.population.routes.LinkNetworkRouteImpl;
 import org.matsim.core.population.routes.NetworkRoute;
 import org.matsim.core.router.*;
 import org.matsim.core.router.costcalculators.OnlyTimeDependentTravelDisutility;
-import org.matsim.core.router.util.LeastCostPathCalculator;
-import org.matsim.core.router.util.PreProcessDijkstra;
-import org.matsim.core.router.util.TravelDisutility;
-import org.matsim.core.router.util.TravelTime;
+import org.matsim.core.router.util.*;
 import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.core.trafficmonitoring.FreeSpeedTravelTime;
 import org.matsim.core.utils.geometry.CoordUtils;
@@ -137,14 +134,7 @@ public class DiluteBaselineSuperLight {
 			// reset all legs so that they are newly initialized when the new sim starts
 			for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
 				if (pe instanceof Leg) {
-					((Leg)pe).setRoute(null);
-				}
-			}
-			// reset all activity coordinates to the chosen facilities coord...
-			for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
-				if (pe instanceof Activity) {
-					((Activity)pe).setCoord(
-							facilities.getFacilities().get(((Activity)pe).getFacilityId()).getCoord());
+					((Leg) pe).setRoute(null);
 				}
 			}
 			// for every agent, but especially for outAct, which is not allowed to change mode,
@@ -590,6 +580,15 @@ public class DiluteBaselineSuperLight {
 		Population inputPopulation = PopulationUtils.readPopulation(plansConfigGroup.getInputFile());
 		new ObjectAttributesXmlReader(inputPopulation.getPersonAttributes())
 				.readFile(plansConfigGroup.getInputPersonAttributeFile());
+		// reset all activity coordinates to the chosen facilities coord...
+		for (Person person : inputPopulation.getPersons().values()) {
+			for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
+				if (pe instanceof Activity) {
+					((Activity) pe).setCoord(
+							facilities.getFacilities().get(((Activity) pe).getFacilityId()).getCoord());
+				}
+			}
+		}
 		// create initial car routes
 		findInitialCarRoutes(inputPopulation);
 		return inputPopulation;
@@ -598,12 +597,12 @@ public class DiluteBaselineSuperLight {
 	private void findInitialCarRoutes(Population population) {
 		TravelTime travelTime = new FreeSpeedTravelTime();
 		TravelDisutility travelDisutility = new OnlyTimeDependentTravelDisutility(travelTime);
-		PreProcessDijkstra preprocessDijkstra = new PreProcessDijkstra();
-		preprocessDijkstra.run(carNetwork);
+		LeastCostPathCalculatorFactory factory = new FastAStarLandmarksFactory(carNetwork, travelDisutility);
 		LeastCostPathCalculator leastCostPathCalculator =
-				new Dijkstra(carNetwork, travelDisutility, travelTime, preprocessDijkstra);
+				factory.createPathCalculator(carNetwork, travelDisutility, travelTime);
 		RoutingModule routingModule =
-				new NetworkRoutingModule("car", population.getFactory(), carNetwork, leastCostPathCalculator);
+				new NetworkRoutingModule("car", population.getFactory(), carNetwork,
+						leastCostPathCalculator);
 		MainModeIdentifier mainModeIdentifier = new MainModeIdentifierImpl();
 
 		Counter counter = new Counter(" initial routing # ");
