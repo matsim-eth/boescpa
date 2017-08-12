@@ -134,38 +134,51 @@ public class DiluteBaselineSuperLight {
 				plansCalcRouteConfigGroup.getBeelineDistanceFactors().get("bike");
 
 		for (Person person : filteredPopulation.getPersons().values()) {
-			// reset all car legs so that they are newly initialized when the new sim starts
+			// reset all legs so that they are newly initialized when the new sim starts
 			for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
-				if (pe instanceof Leg && ((Leg)pe).getMode().equals("car")) {
-					Leg leg = (Leg)pe;
-					leg.setRoute(null);
+				if (pe instanceof Leg) {
+					((Leg)pe).setRoute(null);
 				}
 			}
-			// for outAct, which is not allowed to change mode, change modes to "reasonable" modes
-			String subpop = (String)filteredPopulation.getPersonAttributes().getAttribute(
-					person.getId().toString(), "subpopulation");
-			if (subpop != null && subpop.equals("outAct")) {
-				Leg lastLeg = null;
-				ActivityFacility lastFacility = null;
-				for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
-					if (pe instanceof Activity) {
-						ActivityFacility thisFacility = this.facilities.getFacilities().get(
-								((Activity)pe).getFacilityId());
-						if (lastFacility != null && lastLeg != null && !lastLeg.getMode().equals("car")) {
-							double distance = CoordUtils.calcEuclideanDistance(
-									thisFacility.getCoord(), lastFacility.getCoord());
-							if (lastLeg.getMode().equals("walk") && (distance > maxWalkDist)) {
-								lastLeg.setMode("bike");
-							}
-							if (lastLeg.getMode().equals("bike") && (distance > maxBikeDist)) {
+			// reset all activity coordinates to the chosen facilities coord...
+			for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
+				if (pe instanceof Activity) {
+					((Activity)pe).setCoord(
+							facilities.getFacilities().get(((Activity)pe).getFacilityId()).getCoord());
+				}
+			}
+			// for every agent, but especially for outAct, which is not allowed to change mode,
+			// change initial mode choice to "reasonable" modes
+			// - for non-outAct, it should only change the initial setting, but as they are allowed
+			// 		mode-choice, it should be fine...
+			// - for freight it should not change anything (because they have only car and we don't
+			// 		touch car here))
+			Leg lastLeg = null;
+			ActivityFacility lastFacility = null;
+			for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
+				if (pe instanceof Activity) {
+					ActivityFacility thisFacility = this.facilities.getFacilities().get(
+							((Activity)pe).getFacilityId());
+					if (lastFacility != null && lastLeg != null && !lastLeg.getMode().equals("car")) {
+						double distance = CoordUtils.calcEuclideanDistance(
+								thisFacility.getCoord(), lastFacility.getCoord());
+						if (lastLeg.getMode().equals("walk") && (distance > maxWalkDist)) {
+							lastLeg.setMode("bike");
+						}
+						if (lastLeg.getMode().equals("bike") && (distance > maxBikeDist)) {
+							String subpop = (String)filteredPopulation.getPersonAttributes().getAttribute(
+									person.getId().toString(), "subpopulation");
+							if (subpop != null && subpop.equals("outAct")) {
 								lastLeg.setMode(OUTAREA_PT);
+							} else {
+								lastLeg.setMode("pt");
 							}
 						}
-						lastFacility = thisFacility;
 					}
-					if (pe instanceof Leg) {
-						lastLeg = (Leg)pe;
-					}
+					lastFacility = thisFacility;
+				}
+				if (pe instanceof Leg) {
+					lastLeg = (Leg)pe;
 				}
 			}
 		}
