@@ -26,8 +26,10 @@ import org.matsim.api.core.v01.events.PersonArrivalEvent;
 import org.matsim.api.core.v01.events.PersonDepartureEvent;
 import org.matsim.api.core.v01.events.handler.PersonArrivalEventHandler;
 import org.matsim.api.core.v01.events.handler.PersonDepartureEventHandler;
+import org.matsim.core.config.Config;
 import org.matsim.core.mobsim.framework.events.MobsimAfterSimStepEvent;
 import org.matsim.core.mobsim.framework.listeners.MobsimAfterSimStepListener;
+import org.matsim.core.trafficmonitoring.TravelTimeCalculator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,24 +42,35 @@ import java.util.Map;
 public class StaticAVSimEventListener implements PersonDepartureEventHandler, PersonArrivalEventHandler,
 		MobsimAfterSimStepListener {
 
-	// Idee: Pro Service eine passende StaticAVSim mit unterstützung von StaticAVConfig.
 	private final Map<String, StaticAVSim> avSims;
 
 	@Inject
-	public StaticAVSimEventListener() {
+	public StaticAVSimEventListener(TravelTimeCalculator travelTimeCalculator, Config config) {
+		StaticAVConfig avConfig = (StaticAVConfig)config.getModules().get(StaticAVConfig.NAME);
 		this.avSims = new HashMap<>();
+
+		double boardingTime = avConfig.getBoardingTime();
+		double unboardingTime = avConfig.getUnboardingTime();
+
+		for (StaticAVConfig.AVOperatorConfig operatorConfig : avConfig.getOperatorConfigs()) {
+			double levelOfService = operatorConfig.getLevelOfService();
+			AVAssignment avAssignment = operatorConfig.getAVAssignment(travelTimeCalculator);
+			StaticAVSim avSim = new StaticAVSim(travelTimeCalculator, avAssignment, levelOfService,
+					boardingTime, unboardingTime);
+			this.avSims.put(operatorConfig.getOperatorId(), avSim);
+		}
 	}
 
 	@Override
 	public void handleEvent(PersonDepartureEvent personDepartureEvent) {
-		if (personDepartureEvent.getLegMode().contains("av")) {
+		if (avSims.keySet().contains(personDepartureEvent.getLegMode())) {
 			avSims.get(personDepartureEvent.getLegMode()).handleDeparture(personDepartureEvent);
 		}
 	}
 
 	@Override
 	public void handleEvent(PersonArrivalEvent personArrivalEvent) {
-		if (personArrivalEvent.getLegMode().contains("av")) {
+		if (avSims.keySet().contains(personArrivalEvent.getLegMode())) {
 			avSims.get(personArrivalEvent.getLegMode()).handleArrival(personArrivalEvent);
 		}
 	}
