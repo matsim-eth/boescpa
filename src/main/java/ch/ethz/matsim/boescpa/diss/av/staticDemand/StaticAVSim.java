@@ -35,7 +35,6 @@ import java.util.*;
  * @author boescpa
  */
 public class StaticAVSim {
-
 	private final TravelTimeCalculator travelTimeCalculator;
 	private final AVAssignment avAssignment;
 
@@ -44,6 +43,7 @@ public class StaticAVSim {
 	private final double unboardingTime;
 
 	private final List<PersonDepartureEvent> pendingRequests;
+	private final List<PersonArrivalEvent> pendingArrivals;
 	private final Map<Id<Person>, AutonomousVehicle> vehiclesInUse;
 	private final Map<AutonomousVehicle, Double> vehicleBlockedUntil;
 	private final List<AutonomousVehicle> availableVehicles;
@@ -59,6 +59,7 @@ public class StaticAVSim {
 		this.unboardingTime = unboardingTime;
 
 		this.pendingRequests = new ArrayList<>();
+		this.pendingArrivals = new ArrayList<>();
 		this.vehiclesInUse = new HashMap<>();
 		this.vehicleBlockedUntil = new LinkedHashMap<>();
 		this.availableVehicles = new LinkedList<>();
@@ -67,7 +68,9 @@ public class StaticAVSim {
 
 	public void reset() {
 		this.pendingRequests.clear();
+		this.pendingArrivals.clear();
 		this.vehiclesInUse.clear();
+		this.vehicleBlockedUntil.clear();
 		this.availableVehicles.clear();
 		this.stats = new Stats(this.vehiclesInUse, this.availableVehicles, this.vehicleBlockedUntil);
 	}
@@ -152,21 +155,33 @@ public class StaticAVSim {
 	}
 
 	void handleArrival(PersonArrivalEvent arrival) {
-		// 1. Move vehicle:
-		AutonomousVehicle vehicle = vehiclesInUse.remove(arrival.getPersonId());
-		double travelTime = vehicle.getTravelTime();
-		travelTime += arrival.getTime() + vehicle.getDepartureTime();
-		vehicle.setPosition(arrival.getLinkId());
-		// 2. Agents unboards vehicle and thus "frees" the vehicle:
-		travelTime += unboardingTime;
-		//		While agent already arrived, he's still blocking the vehicle for the additional time it
-		//		took the vehicle to serve this agent. In reality, the agent would arrive a few seconds to
-		//		minutes (the time it took the vehicle to get to him) later, but we are accepting this
-		//		approximation here.
-		vehicleBlockedUntil.put(vehicle,
-				arrival.getTime() + (travelTime - (arrival.getTime() - vehicle.getDepartureTime())));
-		// ***************************************************************************
-		recordArrivalStats(arrival, vehicle, travelTime);
+		pendingArrivals.add(arrival);
+	}
+
+	void handlePendingArrivals() {
+		List<PersonArrivalEvent> handledArrivals = new ArrayList<>();
+		for (PersonArrivalEvent arrival : pendingArrivals) {
+			if (vehiclesInUse.containsKey(arrival.getPersonId())) {
+				// 1. Move vehicle:
+				AutonomousVehicle vehicle = vehiclesInUse.remove(arrival.getPersonId());
+				double travelTime = vehicle.getTravelTime();
+				travelTime += arrival.getTime() + vehicle.getDepartureTime();
+				vehicle.setPosition(arrival.getLinkId());
+				// 2. Agents unboards vehicle and thus "frees" the vehicle:
+				travelTime += unboardingTime;
+				//		While agent already arrived, he's still blocking the vehicle for the additional
+				// 		time it took the vehicle to serve this agent. In reality, the agent would arrive
+				// 		a few seconds to minutes (the time it took the vehicle to get to him) later, but
+				// 		we are accepting this approximation here.
+				vehicleBlockedUntil.put(vehicle,
+						arrival.getTime() + (travelTime - (arrival.getTime() - vehicle.getDepartureTime())));
+				// 3. Mark arrival as handled:
+				handledArrivals.add(arrival);
+				// ***************************************************************************
+				recordArrivalStats(arrival, vehicle, travelTime);
+			}
+		}
+		pendingArrivals.removeAll(handledArrivals);
 	}
 
 	// ******************************************************************************************
@@ -203,5 +218,9 @@ public class StaticAVSim {
 		//stats.incTravelDistanceMetDemand();
 		vehicle.incServiceTime(travelTime);
 		//vehicle.incServiceDistance();
+	}
+
+	public void writeResults(String iterationFilename) {
+		stats.printResults(iterationFilename);
 	}
 }

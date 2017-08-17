@@ -21,12 +21,14 @@
 
 package ch.ethz.matsim.boescpa.diss.av.staticDemand;
 
-import com.google.inject.Inject;
 import org.matsim.api.core.v01.events.PersonArrivalEvent;
 import org.matsim.api.core.v01.events.PersonDepartureEvent;
 import org.matsim.api.core.v01.events.handler.PersonArrivalEventHandler;
 import org.matsim.api.core.v01.events.handler.PersonDepartureEventHandler;
 import org.matsim.core.config.Config;
+import org.matsim.core.controler.OutputDirectoryHierarchy;
+import org.matsim.core.controler.events.IterationEndsEvent;
+import org.matsim.core.controler.listener.IterationEndsListener;
 import org.matsim.core.mobsim.framework.events.MobsimAfterSimStepEvent;
 import org.matsim.core.mobsim.framework.listeners.MobsimAfterSimStepListener;
 import org.matsim.core.trafficmonitoring.TravelTimeCalculator;
@@ -40,21 +42,26 @@ import java.util.Map;
  * @author boescpa
  */
 public class StaticAVSimEventListener implements PersonDepartureEventHandler, PersonArrivalEventHandler,
-		MobsimAfterSimStepListener {
+		MobsimAfterSimStepListener, IterationEndsListener {
 
 	private final Map<String, StaticAVSim> avSims;
+	private final OutputDirectoryHierarchy controlerIO;
+	private final int writeSnapshotInterval;
 
-	@Inject
-	public StaticAVSimEventListener(TravelTimeCalculator travelTimeCalculator, Config config) {
+	public StaticAVSimEventListener(TravelTimeCalculator travelTimeCalculator, Config config,
+									OutputDirectoryHierarchy controlerIO) {
 		StaticAVConfig avConfig = (StaticAVConfig)config.getModules().get(StaticAVConfig.NAME);
 		this.avSims = new HashMap<>();
+		this.controlerIO = controlerIO;
+		this.writeSnapshotInterval = config.controler().getWriteSnapshotsInterval();
 
 		double boardingTime = avConfig.getBoardingTime();
 		double unboardingTime = avConfig.getUnboardingTime();
 
 		for (StaticAVConfig.AVOperatorConfig operatorConfig : avConfig.getOperatorConfigs()) {
 			double levelOfService = operatorConfig.getLevelOfService();
-			AVAssignment avAssignment = operatorConfig.getAVAssignment(travelTimeCalculator);
+			AVAssignment avAssignment = operatorConfig.getAVAssignment();
+			avAssignment.setTravelTimeCalculator(travelTimeCalculator);
 			StaticAVSim avSim = new StaticAVSim(travelTimeCalculator, avAssignment, levelOfService,
 					boardingTime, unboardingTime);
 			this.avSims.put(operatorConfig.getOperatorId(), avSim);
@@ -63,31 +70,40 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 
 	@Override
 	public void handleEvent(PersonDepartureEvent personDepartureEvent) {
-		if (avSims.keySet().contains(personDepartureEvent.getLegMode())) {
-			avSims.get(personDepartureEvent.getLegMode()).handleDeparture(personDepartureEvent);
+		if (this.avSims.keySet().contains(personDepartureEvent.getLegMode())) {
+			this.avSims.get(personDepartureEvent.getLegMode()).handleDeparture(personDepartureEvent);
 		}
 	}
 
 	@Override
 	public void handleEvent(PersonArrivalEvent personArrivalEvent) {
-		if (avSims.keySet().contains(personArrivalEvent.getLegMode())) {
-			avSims.get(personArrivalEvent.getLegMode()).handleArrival(personArrivalEvent);
+		if (this.avSims.keySet().contains(personArrivalEvent.getLegMode())) {
+			this.avSims.get(personArrivalEvent.getLegMode()).handleArrival(personArrivalEvent);
 		}
 	}
 
 	@Override
 	public void notifyMobsimAfterSimStep(MobsimAfterSimStepEvent mobsimAfterSimStepEvent) {
-		for (StaticAVSim avSim : avSims.values()) {
+		for (StaticAVSim avSim : this.avSims.values()) {
+			avSim.handlePendingArrivals();
 			avSim.freeBlockedVehicles(mobsimAfterSimStepEvent.getSimulationTime());
 			avSim.handlePendingRequests(mobsimAfterSimStepEvent.getSimulationTime());
 		}
 	}
 
-	// todo-boescpa: Writeout am richtigen Ort zu den korrekten Iterationen noch einbauen (v.a. bevor reset gerufen wird, denn dies würde alle Werte deleten...).
+	@Override
+	public void notifyIterationEnds(IterationEndsEvent iterationEndsEvent) {
+		if (iterationEndsEvent.getIteration() % writeSnapshotInterval == 0) {
+			for (String avSimKey : this.avSims.keySet()) {
+				this.avSims.get(avSimKey).writeResults(this.controlerIO.getIterationFilename(
+						iterationEndsEvent.getIteration(), avSimKey + ".txt"));
+			}
+		}
+	}
 
 	@Override
 	public void reset(int i) {
-		for (StaticAVSim avSim : avSims.values()) {
+		for (StaticAVSim avSim : this.avSims.values()) {
 			avSim.reset();
 		}
 	}

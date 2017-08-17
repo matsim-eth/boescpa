@@ -104,7 +104,7 @@ public class Stats {
         if (localTravelTime >= 0) {
             totalTravelTimeMetDemand += localTravelTime;
         } else {
-            throw new IllegalArgumentException("Negative travel time!");
+            //throw new IllegalArgumentException("Negative travel time!");
         }
 
         if (localTravelTime < minTravelTimeMetDemand) {

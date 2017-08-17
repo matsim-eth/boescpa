@@ -33,9 +33,9 @@ import java.util.List;
  */
 class AVAssignment {
 
-	private final TravelTimeCalculator travelTimeCalculator;
+	private TravelTimeCalculator travelTimeCalculator;
 
-	AVAssignment(TravelTimeCalculator travelTimeCalculator) {
+	public void setTravelTimeCalculator(TravelTimeCalculator travelTimeCalculator) {
 		this.travelTimeCalculator = travelTimeCalculator;
 	}
 
