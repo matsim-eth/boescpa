@@ -58,10 +58,11 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 
 		for (StaticAVConfig.AVOperatorConfig operatorConfig : avConfig.getOperatorConfigs()) {
 			double levelOfService = operatorConfig.getLevelOfService();
+			double waitingTimeUnmet = operatorConfig.getWaitingTimeUnmet();
 			AVAssignment avAssignment = operatorConfig.getAVAssignment();
 			avAssignment.setTravelTimeCalculator(router);
 			StaticAVSim avSim = new StaticAVSim(router, avAssignment, levelOfService,
-					boardingTime, unboardingTime);
+					boardingTime, unboardingTime, waitingTimeUnmet);
 			this.avSims.put(operatorConfig.getOperatorId(), avSim);
 		}
 	}
@@ -92,7 +93,7 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 	@Override
 	public void notifyIterationEnds(IterationEndsEvent iterationEndsEvent) {
 		for (StaticAVSim avSim : this.avSims.values()) {
-			avSim.finishAllTrips(this.config.qsim().getEndTime());
+			avSim.finishAllTrips();
 		}
 		if (iterationEndsEvent.getIteration() % this.config.controler().getWriteSnapshotsInterval() == 0) {
 			for (String avSimKey : this.avSims.keySet()) {

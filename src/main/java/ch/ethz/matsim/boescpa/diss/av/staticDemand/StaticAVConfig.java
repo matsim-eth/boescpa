@@ -116,10 +116,12 @@ public class StaticAVConfig extends	ReflectiveConfigGroup {
 		final static String OPERATOR_ID = "id";
 		final static String AV_ASSIGNMENT = "avAssignment";
 		final static String LEVEL_OF_SERVICE = "levelOfService";
+		final static String WAITING_TIME_UNMET = "waitingTimeUnmet";
 
 		private String operatorId;
 		private double levelOfService = 5*60.0;
 		private String avAssignment = "closestWithinRange";
+		private double waitingTimeUnmet = 2*60.0;
 
 		public AVOperatorConfig() {
 			super(NAME);
@@ -155,6 +157,16 @@ public class StaticAVConfig extends	ReflectiveConfigGroup {
 			// as at the moment we have only one, we set this one...
 			// later (after ride-sharing implementation) decide based on string...
 			return new AVAssignment();
+		}
+
+		@StringSetter(WAITING_TIME_UNMET)
+		public void setWaitingTimeUnmet(String waitingTimeUnmet) {
+			this.waitingTimeUnmet = Double.parseDouble(waitingTimeUnmet);
+		}
+
+		@StringGetter(WAITING_TIME_UNMET)
+		public double getWaitingTimeUnmet() {
+			return waitingTimeUnmet;
 		}
 	}
 }

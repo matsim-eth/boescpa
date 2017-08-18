@@ -25,7 +25,7 @@ import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.PersonArrivalEvent;
 import org.matsim.api.core.v01.events.PersonDepartureEvent;
 import org.matsim.api.core.v01.population.Person;
-import org.matsim.core.router.util.LeastCostPathCalculator;
+import org.matsim.api.core.v01.population.Route;
 
 import java.util.*;
 
@@ -41,22 +41,26 @@ public class StaticAVSim {
 	private final double levelOfService;
 	private final double boardingTime;
 	private final double unboardingTime;
+	private final double waitingTimeUnmet;
 
 	private final List<PersonDepartureEvent> pendingRequests;
 	private final List<PersonArrivalEvent> pendingArrivals;
 	private final Map<Id<Person>, AutonomousVehicle> vehiclesInUse;
 	private final Map<AutonomousVehicle, Double> vehicleBlockedUntil;
 	private final List<AutonomousVehicle> availableVehicles;
+
 	private Stats stats;
 
 	public StaticAVSim(AVRouter router, AVAssignment avAssignment,
-					   double levelOfService, double boardingTime, double unboardingTime) {
+					   double levelOfService, double boardingTime, double unboardingTime,
+					   double waitingTimeUnmet) {
 		this.router = router;
 		this.avAssignment = avAssignment;
 
 		this.levelOfService = levelOfService;
 		this.boardingTime = boardingTime;
 		this.unboardingTime = unboardingTime;
+		this.waitingTimeUnmet = waitingTimeUnmet;
 
 		this.pendingRequests = new ArrayList<>();
 		this.pendingArrivals = new ArrayList<>();
@@ -105,7 +109,7 @@ public class StaticAVSim {
 			} else {
 				// There is currently no suitable vehicle available.
 				if (simulationTime - request.getTime() >= levelOfService) {
-					handleUnmetRequests(request, simulationTime);
+					handleUnmetRequests(request);
 				} // Else we leave the request unhandled and try again in a second.
 			}
 		}
@@ -117,41 +121,43 @@ public class StaticAVSim {
 		availableVehicles.remove(assignedVehicle);
 		vehiclesInUse.put(request.getPersonId(), assignedVehicle);
 		// 2. Move vehicle to agent:
-		double travelTime = this.router.getTravelTime(assignedVehicle.getPosition(), request.getLinkId(),
+		Route accessRoute = this.router.getRoute(assignedVehicle.getPosition(), request.getLinkId(),
 				request.getTime());
+		double accessDistance = accessRoute.getDistance();
 		double waitingTimeForAssignment = simulationTime - request.getTime();
-		double responseTime = waitingTimeForAssignment + travelTime;
+		double responseTime = waitingTimeForAssignment + accessRoute.getTravelTime();
 		// 3. Agent boards vehicle:
-		double waitingTimeForAgents = levelOfService - responseTime > 0 ? levelOfService - responseTime : 0;
-		travelTime += waitingTimeForAgents;
-		travelTime += boardingTime;
+		double waitingTimeForAgents = levelOfService - responseTime > 0 ?
+				levelOfService - responseTime : 0;
+		assignedVehicle.setTravelTime(boardingTime);
 		// 4. Vehicle is on its way...
-		assignedVehicle.setTravelTime(travelTime);
-		assignedVehicle.setDepartureTime(simulationTime);
+		assignedVehicle.setDepartureTime(request.getTime());
 		pendingRequests.remove(request);
+		// All this took time...:
+		assignedVehicle.setBlockTime(responseTime + waitingTimeForAgents + boardingTime);
 		// ***************************************************************************
-		recordDepartureStats(simulationTime, assignedVehicle, waitingTimeForAssignment, responseTime,
-				waitingTimeForAgents);
+		recordDepartureStats(request.getTime(), assignedVehicle, waitingTimeForAssignment, responseTime,
+				waitingTimeForAgents, accessDistance);
 	}
 
-	private void handleUnmetRequests(PersonDepartureEvent request, double simulationTime) {
+	private void handleUnmetRequests(PersonDepartureEvent request) {
 		// 1. Create the vehicle at the place of the agent:
 		AutonomousVehicle assignedVehicle = new AutonomousVehicle(request.getLinkId());
 		vehiclesInUse.put(request.getPersonId(), assignedVehicle);
-		double travelTime = 0;
+		double accessDistance = 0;
 		double waitingTimeForAssignment = 0;
-		double responseTime = waitingTimeForAssignment + travelTime;
-		// 3. Agent boards vehicle:
-		double waitingTimeForAgents = levelOfService / 2; // represents the expected average
-		travelTime += waitingTimeForAgents;
-		travelTime += boardingTime;
-		// 4. Vehicle is on its way...
-		assignedVehicle.setTravelTime(travelTime);
-		assignedVehicle.setDepartureTime(simulationTime);
+		double responseTime = 0;
+		// 2. Agent boards vehicle:
+		double waitingTimeForAgents = this.waitingTimeUnmet;
+		assignedVehicle.setTravelTime(boardingTime);
+		// 3. Vehicle is on its way...
+		assignedVehicle.setDepartureTime(request.getTime());
 		pendingRequests.remove(request);
+		// All this took time...:
+		assignedVehicle.setBlockTime(responseTime + waitingTimeForAgents + boardingTime);
 		// ***************************************************************************
-		recordDepartureStats(simulationTime, assignedVehicle, waitingTimeForAssignment, responseTime,
-				waitingTimeForAgents);
+		recordDepartureStats(request.getTime(), assignedVehicle, waitingTimeForAssignment, responseTime,
+				waitingTimeForAgents, accessDistance);
 	}
 
 	void handleArrival(PersonArrivalEvent arrival) {
@@ -173,21 +179,23 @@ public class StaticAVSim {
 				// 		time it took the vehicle to serve this agent. In reality, the agent would arrive
 				// 		a few seconds to minutes (the time it took the vehicle to get to him) later, but
 				// 		we are accepting this approximation here.
-				vehicleBlockedUntil.put(vehicle,
-						arrival.getTime() + (travelTime - (arrival.getTime() - vehicle.getDepartureTime())));
+				double totalBlockTime = vehicle.getBlockTime() // time until departure vehicle
+						+ (arrival.getTime() - vehicle.getDepartureTime()) // travel time with agent
+						+ unboardingTime; // unboarding agent
+				vehicleBlockedUntil.put(vehicle, arrival.getTime() + totalBlockTime);
 				// 3. Mark arrival as handled:
 				handledArrivals.add(arrival);
 				// ***************************************************************************
-				recordArrivalStats(arrival, vehicle, travelTime);
+				recordArrivalStats(arrival.getTime(), vehicle, travelTime);
 			}
 		}
 		pendingArrivals.removeAll(handledArrivals);
 	}
 
-	void finishAllTrips(double endTime) {
+	void finishAllTrips() {
 		for (int i = pendingRequests.size() - 1; i > -1; i--) {
 			PersonDepartureEvent request = pendingRequests.get(i);
-			handleUnmetRequests(request, endTime);
+			handleUnmetRequests(request);
 		}
 		handlePendingArrivals();
 	}
@@ -195,35 +203,33 @@ public class StaticAVSim {
 	// ******************************************************************************************
 	// ******************************************************************************************
 
-	private void recordDepartureStats(double simulationTime, AutonomousVehicle assignedVehicle,
+	private void recordDepartureStats(double timeOfRequest, AutonomousVehicle assignedVehicle,
 									  double waitingTimeForAssignment, double responseTime,
-									  double waitingTimeForAgents) {
+									  double waitingTimeForAgents, double accessDistance) {
 		StatRequest statRequest = new StatRequest();
 		statRequest.setAssignmentTime(waitingTimeForAssignment);
 		statRequest.setResponseTime(responseTime);
-		statRequest.setStartTime(simulationTime);
+		statRequest.setStartTime(timeOfRequest);
 		assignedVehicle.setStatRequest(new StatRequest());
 		assignedVehicle.incNumberOfServices();
 		assignedVehicle.incAccessTime(responseTime - waitingTimeForAssignment);
-		//assignedVehicle.incAccessDistance();
+		assignedVehicle.incAccessDistance(accessDistance);
 		assignedVehicle.incWaitingTime(waitingTimeForAgents);
 		stats.incWaitingTime(responseTime > levelOfService ? responseTime - levelOfService : 0);
-		stats.incWaitingTimeForAssignmentMetDemand(waitingTimeForAssignment);
-		stats.incResponseTimeMetDemand(responseTime);
+		stats.incWaitingTimeForAssignment(waitingTimeForAssignment);
+		stats.incResponseTime(responseTime);
 		if (responseTime < 60) {
 			stats.incQuickMetDemand();
-		} else {
-			stats.incMetDemand();
 		}
 	}
 
-	private void recordArrivalStats(PersonArrivalEvent arrival, AutonomousVehicle vehicle, double travelTime) {
+	private void recordArrivalStats(double timeOfArrival, AutonomousVehicle vehicle, double travelTime) {
 		StatRequest statRequest = vehicle.getStatRequest();
-		statRequest.setDuration(arrival.getTime()-vehicle.getDepartureTime());
+		statRequest.setDuration(travelTime);
 		//statRequest.setDistance();
 		stats.addRequest(statRequest);
-		stats.incTravelTimeMetDemand(arrival.getTime() - vehicle.getDepartureTime());
-		//stats.incTravelDistanceMetDemand();
+		stats.incTravelTime(timeOfArrival - vehicle.getDepartureTime());
+		//stats.incTravelDistance();
 		vehicle.incServiceTime(travelTime);
 		//vehicle.incServiceDistance();
 	}

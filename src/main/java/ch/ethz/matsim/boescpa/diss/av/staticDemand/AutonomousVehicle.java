@@ -37,6 +37,7 @@ public class AutonomousVehicle {
     private double travelTime;
     private double departureTime;
 	private StatRequest statRequest;
+	private double blockTime;
 
 	AutonomousVehicle(Id<Link> initialPosition) {
         position = initialPosition;
@@ -58,6 +59,10 @@ public class AutonomousVehicle {
 		return statRequest;
 	}
 
+	public double getBlockTime() {
+		return blockTime;
+	}
+
 	public void setPosition(Id<Link> position) {
 		this.position = position;
 	}
@@ -72,6 +77,10 @@ public class AutonomousVehicle {
 
 	void setTravelTime(double travelTime) {
 		this.travelTime = travelTime;
+	}
+
+	public void setBlockTime(double blockTime) {
+		this.blockTime = blockTime;
 	}
 
     // ------ Stats ------

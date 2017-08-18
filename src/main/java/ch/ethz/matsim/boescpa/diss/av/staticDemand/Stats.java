@@ -51,17 +51,16 @@ public class Stats {
     private List<String> simResults = new ArrayList<>();
 
     private long totalDemand = 0;
-    private long metDemand = 0;
-	private long quickMetDemand = 0; // number
-    private double responseTimeMetDemand = 0; // seconds
-    private double maxResponseTimeMetDemand = 0; // seconds
-    private double minTravelTimeMetDemand = 0; // minutes
-    private double maxTravelTimeMetDemand = 0; // minutes
-    private double totalTravelTimeMetDemand = 0; // minutes
-    private double travelDistanceMetDemand = 0; // m
+    private long quickMetDemand = 0; // number
+    private double responseTime = 0; // seconds
+    private double maxResponseTime = 0; // seconds
+    private double minTravelTime = 0; // minutes
+    private double maxTravelTime = 0; // minutes
+    private double totalTravelTime = 0; // minutes
+    private double travelDistance = 0; // m
 
-    private double totalWaitingTimeForAssignmentMetDemand = 0; // seconds
-    private double maxWaitingTimeForAssignmentMetDemand = 0; // seconds
+    private double totalWaitingTimeForAssignment = 0; // seconds
+    private double maxWaitingTimeForAssignment = 0; // seconds
     private double totalWaitingTimeAgents = 0; // seconds
     private double maxWaitingTimeAgents = 0; // seconds
 
@@ -77,57 +76,53 @@ public class Stats {
         totalDemand++;
     }
 
-    void incMetDemand() {
-        metDemand++;
-    }
-
 	void incQuickMetDemand() {
 		this.quickMetDemand++;
 	}
 
 
-    void incResponseTimeMetDemand(double responseTime) {
+    void incResponseTime(double responseTime) {
         if (responseTime >= 0) {
-            responseTimeMetDemand += responseTime;
+            this.responseTime += responseTime;
         } else {
             throw new IllegalArgumentException("Negative response time!");
         }
 
-        if (responseTime > maxResponseTimeMetDemand) {
-            maxResponseTimeMetDemand = responseTime;
+        if (responseTime > maxResponseTime) {
+            maxResponseTime = responseTime;
         }
     }
 
-    void incTravelTimeMetDemand(double travelTimeMetDemand) {
-        double localTravelTime = travelTimeMetDemand / 60; // Conversion to minutes...
+    void incTravelTime(double travelTime) {
+        double localTravelTime = travelTime / 60; // Conversion to minutes...
 
         if (localTravelTime >= 0) {
-            totalTravelTimeMetDemand += localTravelTime;
+            totalTravelTime += localTravelTime;
         } else {
-            //throw new IllegalArgumentException("Negative travel time!");
+            throw new IllegalArgumentException("Negative travel time!");
         }
 
-        if (localTravelTime < minTravelTimeMetDemand) {
-            minTravelTimeMetDemand = localTravelTime;
+        if (localTravelTime < minTravelTime) {
+            minTravelTime = localTravelTime;
         }
-        if (localTravelTime > maxTravelTimeMetDemand) {
-            maxTravelTimeMetDemand = localTravelTime;
+        if (localTravelTime > maxTravelTime) {
+            maxTravelTime = localTravelTime;
         }
     }
 
-    void incTravelDistanceMetDemand(double distance) {
+    void incTravelDistance(double distance) {
         if (distance >= 0) {
-            travelDistanceMetDemand += distance;
+            travelDistance += distance;
         } else {
             throw new IllegalArgumentException("Negative travel distance!");
         }
     }
 
-    void incWaitingTimeForAssignmentMetDemand(double waitingTimeForAssignment) {
+    void incWaitingTimeForAssignment(double waitingTimeForAssignment) {
         if (waitingTimeForAssignment >= 0) {
-            totalWaitingTimeForAssignmentMetDemand += waitingTimeForAssignment;
-            if (waitingTimeForAssignment > maxWaitingTimeForAssignmentMetDemand) {
-                maxWaitingTimeForAssignmentMetDemand = waitingTimeForAssignment;
+            totalWaitingTimeForAssignment += waitingTimeForAssignment;
+            if (waitingTimeForAssignment > maxWaitingTimeForAssignment) {
+                maxWaitingTimeForAssignment = waitingTimeForAssignment;
             }
         } else {
             throw new IllegalArgumentException("Negative waiting time for assignment!");
@@ -193,17 +188,16 @@ public class Stats {
         // Met demand:
         simResults.add("   ...........");
         simResults.add(" - Quick met demand: " + quickMetDemand);
-        simResults.add(" - Met demand: " + metDemand);
-        simResults.add(" - Average waiting time for assignment met demand: " + 0.01 * (Math.round(100 * (totalWaitingTimeForAssignmentMetDemand / metDemand / 60))) + " min");
-        simResults.add(" - Max waiting time for assignment met demand: " + 0.01 * (Math.round(100 * (maxWaitingTimeForAssignmentMetDemand / 60))) + " min");
-		simResults.add(" - Average waiting time agent for vehicle: " + 0.01 * (Math.round(100 * (totalWaitingTimeAgents / metDemand / 60))) + " min");
+        simResults.add(" - Average waiting time for assignment: " + 0.01 * (Math.round(100 * (totalWaitingTimeForAssignment / totalDemand / 60))) + " min");
+        simResults.add(" - Max waiting time for assignment: " + 0.01 * (Math.round(100 * (maxWaitingTimeForAssignment / 60))) + " min");
+		simResults.add(" - Average waiting time agent for vehicle: " + 0.01 * (Math.round(100 * (totalWaitingTimeAgents / totalDemand / 60))) + " min");
 		simResults.add(" - Max waiting time agent for vehicle: " + 0.01 * (Math.round(100 * (maxWaitingTimeAgents / 60))) + " min");
-        simResults.add(" - Average response time met demand: " + 0.01 * (Math.round(100 * (responseTimeMetDemand / metDemand / 60))) + " min");
-        simResults.add(" - Max response time met demand: " + 0.01 * (Math.round(100 * (maxResponseTimeMetDemand / 60))) + " min");
-        simResults.add(" - Average travel time met demand: " + 0.01 * (Math.round(100 * (totalTravelTimeMetDemand / metDemand))) + " min");
-        simResults.add(" - Min travel time met demand: " + 0.01 * (Math.round(100 * (minTravelTimeMetDemand))) + " min");
-        simResults.add(" - Max travel time met demand: " + 0.01 * (Math.round(100 * (maxTravelTimeMetDemand))) + " min");
-        simResults.add(" - Average travel distance met demand: " + (travelDistanceMetDemand / metDemand / 1000) + " km");
+        simResults.add(" - Average response time: " + 0.01 * (Math.round(100 * (responseTime / totalDemand / 60))) + " min");
+        simResults.add(" - Max response time: " + 0.01 * (Math.round(100 * (maxResponseTime / 60))) + " min");
+        simResults.add(" - Average travel time: " + 0.01 * (Math.round(100 * (totalTravelTime / totalDemand))) + " min");
+        simResults.add(" - Min travel time: " + 0.01 * (Math.round(100 * (minTravelTime))) + " min");
+        simResults.add(" - Max travel time: " + 0.01 * (Math.round(100 * (maxTravelTime))) + " min");
+        simResults.add(" - Average travel distance: " + (travelDistance / totalDemand / 1000) + " km");
     }
 
     private void writeResultsToFile(String pathToOutput) {
