@@ -117,8 +117,8 @@ public class StaticAVSim {
 		availableVehicles.remove(assignedVehicle);
 		vehiclesInUse.put(request.getPersonId(), assignedVehicle);
 		// 2. Move vehicle to agent:
-		LeastCostPathCalculator.Path path = this.router.getPath(assignedVehicle.getPosition(), request.getLinkId(), request.getTime());
-		double travelTime = path.travelTime;
+		double travelTime = this.router.getTravelTime(assignedVehicle.getPosition(), request.getLinkId(),
+				request.getTime());
 		double waitingTimeForAssignment = simulationTime - request.getTime();
 		double responseTime = waitingTimeForAssignment + travelTime;
 		// 3. Agent boards vehicle:
