@@ -52,13 +52,13 @@ public class StaticAVSimModule extends AbstractModule {
 				Names.named(instanceName)));
 		this.addControlerListenerBinding().to(Key.get(StaticAVSimEventListener.class,
 				Names.named(instanceName)));
-		this.bind(AVRouter.Factory.class);
+		this.bind(AVRouter.class);
 	}
 
 	@Inject
 	@Provides
 	@Named(instanceName)
-	public static StaticAVSimEventListener provideAVSim(Config config, AVRouter.Factory avRouter,
+	public static StaticAVSimEventListener provideAVSim(Config config, AVRouter avRouter,
 														OutputDirectoryHierarchy controlerIO) {
 		if (staticAVSimEventListener == null) {
 			staticAVSimEventListener = new StaticAVSimEventListener(config, controlerIO, avRouter);

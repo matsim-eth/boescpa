@@ -25,7 +25,6 @@ import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.PersonArrivalEvent;
 import org.matsim.api.core.v01.events.PersonDepartureEvent;
 import org.matsim.api.core.v01.population.Person;
-import org.matsim.api.core.v01.population.Route;
 import org.matsim.core.router.util.LeastCostPathCalculator;
 
 import java.util.*;
@@ -118,13 +117,8 @@ public class StaticAVSim {
 		availableVehicles.remove(assignedVehicle);
 		vehiclesInUse.put(request.getPersonId(), assignedVehicle);
 		// 2. Move vehicle to agent:
-		/*Route route = this.router.getPath("taxi_1", assignedVehicle.getPosition(),
-				request.getLinkId(), request.getTime());
-		double travelTime = route.getTravelTime();*/
 		LeastCostPathCalculator.Path path = this.router.getPath(assignedVehicle.getPosition(), request.getLinkId(), request.getTime());
 		double travelTime = path.travelTime;
-		//double travelTime = travelTimeCalculator.getLinkToLinkTravelTime(
-		//		assignedVehicle.getPosition(), request.getLinkId(), simulationTime);
 		double waitingTimeForAssignment = simulationTime - request.getTime();
 		double responseTime = waitingTimeForAssignment + travelTime;
 		// 3. Agent boards vehicle:
