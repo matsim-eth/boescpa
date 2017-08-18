@@ -46,7 +46,12 @@ import java.util.Map;
  * @author boescpa
  */
 class AVRouter {
-	private final Network routingNetwork;
+
+	/*double getTravelTime(Id<Link> fromLink, Id<Link> toLink, double departureTime) {
+		return 1.0;
+	}*/
+
+	/*private final Network routingNetwork;
 	private final LeastCostPathCalculator leastCostPathCalculator;
 
 	@Inject
@@ -69,9 +74,9 @@ class AVRouter {
 
 	double getTravelTime(Id<Link> fromLink, Id<Link> toLink, double departureTime) {
 		return getRoute(fromLink, toLink, departureTime).travelTime;
-	}
+	}*/
 
-	/*private final RoutingModule routingModule;
+	private final RoutingModule routingModule;
 
 	@Inject
 	AVRouter(TripRouter tripRouter) {
@@ -114,5 +119,5 @@ class AVRouter {
 		public Id getId() {
 			return null;
 		}
-	}*/
+	}
 }
