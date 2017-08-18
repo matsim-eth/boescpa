@@ -22,7 +22,9 @@
 package ch.ethz.matsim.boescpa.lib.tools;
 
 import org.matsim.api.core.v01.Scenario;
+import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
+import org.matsim.api.core.v01.network.Node;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.network.io.MatsimNetworkReader;
 import org.matsim.core.scenario.ScenarioUtils;
@@ -46,4 +48,27 @@ public class NetworkUtils {
 		return scenario.getNetwork();
 	}
 
+	public static Network getModeFilteredNetwork(Network network, String mode) {
+		Network onlyModeNetwork = org.matsim.core.network.NetworkUtils.createNetwork();
+		for (Link link : network.getLinks().values()) {
+			if (link.getAllowedModes().contains(mode)) {
+				addLink(onlyModeNetwork, link);
+			}
+		}
+		return onlyModeNetwork;
+	}
+
+	private static void addLink(Network network, Link link) {
+		if (!network.getNodes().containsKey(link.getFromNode().getId())) {
+			Node node = network.getFactory().createNode(link.getFromNode().getId(), link.getFromNode().getCoord());
+			network.addNode(node);
+		}
+		if (!network.getNodes().containsKey(link.getToNode().getId())) {
+			Node node = network.getFactory().createNode(link.getToNode().getId(), link.getToNode().getCoord());
+			network.addNode(node);
+		}
+		network.addLink(link);
+		link.setFromNode(network.getNodes().get(link.getFromNode().getId()));
+		link.setToNode(network.getNodes().get(link.getToNode().getId()));
+	}
 }

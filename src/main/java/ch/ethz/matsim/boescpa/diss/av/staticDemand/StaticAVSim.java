@@ -25,7 +25,8 @@ import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.PersonArrivalEvent;
 import org.matsim.api.core.v01.events.PersonDepartureEvent;
 import org.matsim.api.core.v01.population.Person;
-import org.matsim.core.trafficmonitoring.TravelTimeCalculator;
+import org.matsim.api.core.v01.population.Route;
+import org.matsim.core.router.util.LeastCostPathCalculator;
 
 import java.util.*;
 
@@ -35,7 +36,7 @@ import java.util.*;
  * @author boescpa
  */
 public class StaticAVSim {
-	private final TravelTimeCalculator travelTimeCalculator;
+	private final AVRouter router;
 	private final AVAssignment avAssignment;
 
 	private final double levelOfService;
@@ -49,9 +50,9 @@ public class StaticAVSim {
 	private final List<AutonomousVehicle> availableVehicles;
 	private Stats stats;
 
-	public StaticAVSim(TravelTimeCalculator travelTimeCalculator, AVAssignment avAssignment,
+	public StaticAVSim(AVRouter router, AVAssignment avAssignment,
 					   double levelOfService, double boardingTime, double unboardingTime) {
-		this.travelTimeCalculator = travelTimeCalculator;
+		this.router = router;
 		this.avAssignment = avAssignment;
 
 		this.levelOfService = levelOfService;
@@ -117,8 +118,13 @@ public class StaticAVSim {
 		availableVehicles.remove(assignedVehicle);
 		vehiclesInUse.put(request.getPersonId(), assignedVehicle);
 		// 2. Move vehicle to agent:
-		double travelTime = travelTimeCalculator.getLinkToLinkTravelTime(
-				assignedVehicle.getPosition(), request.getLinkId(), simulationTime);
+		/*Route route = this.router.getPath("taxi_1", assignedVehicle.getPosition(),
+				request.getLinkId(), request.getTime());
+		double travelTime = route.getTravelTime();*/
+		LeastCostPathCalculator.Path path = this.router.getPath(assignedVehicle.getPosition(), request.getLinkId(), request.getTime());
+		double travelTime = path.travelTime;
+		//double travelTime = travelTimeCalculator.getLinkToLinkTravelTime(
+		//		assignedVehicle.getPosition(), request.getLinkId(), simulationTime);
 		double waitingTimeForAssignment = simulationTime - request.getTime();
 		double responseTime = waitingTimeForAssignment + travelTime;
 		// 3. Agent boards vehicle:
@@ -182,6 +188,14 @@ public class StaticAVSim {
 			}
 		}
 		pendingArrivals.removeAll(handledArrivals);
+	}
+
+	void finishAllTrips(double endTime) {
+		for (int i = pendingRequests.size() - 1; i > -1; i--) {
+			PersonDepartureEvent request = pendingRequests.get(i);
+			handleUnmetRequests(request, endTime);
+		}
+		handlePendingArrivals();
 	}
 
 	// ******************************************************************************************

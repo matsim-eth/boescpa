@@ -30,7 +30,6 @@ import org.matsim.api.core.v01.network.Network;
 import org.matsim.core.config.Config;
 import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.OutputDirectoryHierarchy;
-import org.matsim.core.trafficmonitoring.TravelTimeCalculator;
 
 import javax.inject.Named;
 import java.util.HashSet;
@@ -53,17 +52,16 @@ public class StaticAVSimModule extends AbstractModule {
 				Names.named(instanceName)));
 		this.addControlerListenerBinding().to(Key.get(StaticAVSimEventListener.class,
 				Names.named(instanceName)));
+		this.bind(AVRouter.Factory.class);
 	}
 
 	@Inject
 	@Provides
 	@Named(instanceName)
-	public static StaticAVSimEventListener provideAVSim(TravelTimeCalculator travelTimeCalculator,
-														Config config,
+	public static StaticAVSimEventListener provideAVSim(Config config, AVRouter.Factory avRouter,
 														OutputDirectoryHierarchy controlerIO) {
 		if (staticAVSimEventListener == null) {
-			staticAVSimEventListener = new StaticAVSimEventListener(travelTimeCalculator, config,
-					controlerIO);
+			staticAVSimEventListener = new StaticAVSimEventListener(config, controlerIO, avRouter);
 		}
 		return staticAVSimEventListener;
 	}

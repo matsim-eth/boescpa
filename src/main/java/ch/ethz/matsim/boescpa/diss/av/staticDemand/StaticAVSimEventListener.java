@@ -25,13 +25,13 @@ import org.matsim.api.core.v01.events.PersonArrivalEvent;
 import org.matsim.api.core.v01.events.PersonDepartureEvent;
 import org.matsim.api.core.v01.events.handler.PersonArrivalEventHandler;
 import org.matsim.api.core.v01.events.handler.PersonDepartureEventHandler;
+import org.matsim.api.core.v01.network.Network;
 import org.matsim.core.config.Config;
 import org.matsim.core.controler.OutputDirectoryHierarchy;
 import org.matsim.core.controler.events.IterationEndsEvent;
 import org.matsim.core.controler.listener.IterationEndsListener;
 import org.matsim.core.mobsim.framework.events.MobsimAfterSimStepEvent;
 import org.matsim.core.mobsim.framework.listeners.MobsimAfterSimStepListener;
-import org.matsim.core.trafficmonitoring.TravelTimeCalculator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,14 +46,13 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 
 	private final Map<String, StaticAVSim> avSims;
 	private final OutputDirectoryHierarchy controlerIO;
-	private final int writeSnapshotInterval;
+	private final Config config;
 
-	public StaticAVSimEventListener(TravelTimeCalculator travelTimeCalculator, Config config,
-									OutputDirectoryHierarchy controlerIO) {
+	StaticAVSimEventListener(Config config, OutputDirectoryHierarchy controlerIO, AVRouter router) {
 		StaticAVConfig avConfig = (StaticAVConfig)config.getModules().get(StaticAVConfig.NAME);
 		this.avSims = new HashMap<>();
 		this.controlerIO = controlerIO;
-		this.writeSnapshotInterval = config.controler().getWriteSnapshotsInterval();
+		this.config = config;
 
 		double boardingTime = avConfig.getBoardingTime();
 		double unboardingTime = avConfig.getUnboardingTime();
@@ -61,8 +60,8 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 		for (StaticAVConfig.AVOperatorConfig operatorConfig : avConfig.getOperatorConfigs()) {
 			double levelOfService = operatorConfig.getLevelOfService();
 			AVAssignment avAssignment = operatorConfig.getAVAssignment();
-			avAssignment.setTravelTimeCalculator(travelTimeCalculator);
-			StaticAVSim avSim = new StaticAVSim(travelTimeCalculator, avAssignment, levelOfService,
+			avAssignment.setTravelTimeCalculator(router);
+			StaticAVSim avSim = new StaticAVSim(router, avAssignment, levelOfService,
 					boardingTime, unboardingTime);
 			this.avSims.put(operatorConfig.getOperatorId(), avSim);
 		}
@@ -93,7 +92,10 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 
 	@Override
 	public void notifyIterationEnds(IterationEndsEvent iterationEndsEvent) {
-		if (iterationEndsEvent.getIteration() % writeSnapshotInterval == 0) {
+		for (StaticAVSim avSim : this.avSims.values()) {
+			avSim.finishAllTrips(this.config.qsim().getEndTime());
+		}
+		if (iterationEndsEvent.getIteration() % this.config.controler().getWriteSnapshotsInterval() == 0) {
 			for (String avSimKey : this.avSims.keySet()) {
 				this.avSims.get(avSimKey).writeResults(this.controlerIO.getIterationFilename(
 						iterationEndsEvent.getIteration(), avSimKey + ".txt"));

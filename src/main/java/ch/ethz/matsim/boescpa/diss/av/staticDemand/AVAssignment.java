@@ -22,7 +22,6 @@
 package ch.ethz.matsim.boescpa.diss.av.staticDemand;
 
 import org.matsim.api.core.v01.events.PersonDepartureEvent;
-import org.matsim.core.trafficmonitoring.TravelTimeCalculator;
 
 import java.util.List;
 
@@ -33,17 +32,19 @@ import java.util.List;
  */
 class AVAssignment {
 
-	private TravelTimeCalculator travelTimeCalculator;
+	private AVRouter router;
 
-	public void setTravelTimeCalculator(TravelTimeCalculator travelTimeCalculator) {
-		this.travelTimeCalculator = travelTimeCalculator;
+	void setTravelTimeCalculator(AVRouter router) {
+		this.router = router;
 	}
 
 	AutonomousVehicle assignVehicleToRequest(PersonDepartureEvent request, double remainingTime,
 											 List<AutonomousVehicle> availableVehicles) {
 		AutonomousVehicle closestVehicle = getAbsoluteClosest(request, availableVehicles);
 		if (closestVehicle != null) {
-			double travelTimeVehicle = travelTimeCalculator.getLinkToLinkTravelTime(closestVehicle.getPosition(),
+			/*double travelTimeVehicle = router.getTravelTime("taxi_1", closestVehicle.getPosition(),
+					request.getLinkId(), request.getTime());*/
+			double travelTimeVehicle = router.getTravelTime(closestVehicle.getPosition(),
 					request.getLinkId(), request.getTime());
 			if (travelTimeVehicle <= remainingTime) {
 				return closestVehicle;
@@ -57,7 +58,9 @@ class AVAssignment {
 		AutonomousVehicle closestVehicle = null;
 		double minTravelTime = Double.MAX_VALUE;
 		for (AutonomousVehicle currentVehicle : availableAVs) {
-			double travelTime = travelTimeCalculator.getLinkToLinkTravelTime(currentVehicle.getPosition(),
+			/*double travelTimeVehicle = router.getTravelTime("taxi_1", currentVehicle.getPosition(),
+					request.getLinkId(), request.getTime());*/
+			double travelTime = router.getTravelTime(currentVehicle.getPosition(),
 					request.getLinkId(), request.getTime());
 			if (travelTime < minTravelTime) {
 				minTravelTime = travelTime;
