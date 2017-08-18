@@ -148,25 +148,22 @@ public class Stats {
         simStats.add("time [min]"
                         + delimiter + "pendingRequests"
                         + delimiter + "vehiclesInUse"
+						+ delimiter + "blockedVehicles"
                         + delimiter + "availableVehicles"
                         + delimiter + "quickServedRequests"
-                        + delimiter + "servedRequests"
-                        + delimiter + "lateServedRequests"
-                        + delimiter + "unservedRequests"
+                        + delimiter + "totalServedRequests"
         );
     }
 
-    public void recordStats(int time, int pendingRequests, int vehiclesInUse, int availableVehicles,
-							int quickServedRequests, int servedRequests, int lateServedRequests,
-							int unservedRequests) {
+    public void recordStats(int time, int pendingRequests, int vehiclesInUse, int blockedVehicles,
+							int availableVehicles, int quickServedRequests, int totalServedRequests) {
         simStats.add(time / 60
                         + delimiter + pendingRequests
                         + delimiter + vehiclesInUse
+						+ delimiter + blockedVehicles
                         + delimiter + availableVehicles
                         + delimiter + quickServedRequests
-                        + delimiter + servedRequests
-                        + delimiter + lateServedRequests
-                        + delimiter + unservedRequests
+                        + delimiter + totalServedRequests
         );
 
     }

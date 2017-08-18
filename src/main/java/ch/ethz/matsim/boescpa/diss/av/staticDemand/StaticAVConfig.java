@@ -37,6 +37,7 @@ import java.util.Set;
 public class StaticAVConfig extends	ReflectiveConfigGroup {
 	final static String NAME = "staticAV";
 
+	final static String STATS_INTERVAL = "statsInterval";
 	final static String BOARDING_TIME = "boardingDuration";
 	final static String UNBOARDING_TIME = "unboardingDuration";
 	final static String OPERATOR = "operator";
@@ -44,6 +45,7 @@ public class StaticAVConfig extends	ReflectiveConfigGroup {
 	final private Set<AVOperatorConfig> operators = new HashSet<>();
 	private double boardingTime;
 	private double unboardingTime;
+	private int statsInterval = 5*60;
 
 	public StaticAVConfig() {
 		super(NAME);
@@ -106,6 +108,16 @@ public class StaticAVConfig extends	ReflectiveConfigGroup {
 	@StringGetter(UNBOARDING_TIME)
 	public double getUnboardingTime() {
 		return unboardingTime;
+	}
+
+	@StringSetter(STATS_INTERVAL)
+	public void setStatsInterval(String statsInterval) {
+		this.statsInterval = Integer.parseInt(statsInterval);
+	}
+
+	@StringGetter(STATS_INTERVAL)
+	public int getStatsInterval() {
+		return statsInterval;
 	}
 
 	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

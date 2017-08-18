@@ -42,6 +42,7 @@ public class StaticAVSim {
 	private final double boardingTime;
 	private final double unboardingTime;
 	private final double waitingTimeUnmet;
+	private final int statsInterval;
 
 	private final List<PersonDepartureEvent> pendingRequests;
 	private final List<PersonArrivalEvent> pendingArrivals;
@@ -50,10 +51,12 @@ public class StaticAVSim {
 	private final List<AutonomousVehicle> availableVehicles;
 
 	private Stats stats;
+	private int quickServedRequests;
+	private int totalServedRequests;
 
 	public StaticAVSim(AVRouter router, AVAssignment avAssignment,
 					   double levelOfService, double boardingTime, double unboardingTime,
-					   double waitingTimeUnmet) {
+					   double waitingTimeUnmet, int statsInterval) {
 		this.router = router;
 		this.avAssignment = avAssignment;
 
@@ -61,6 +64,7 @@ public class StaticAVSim {
 		this.boardingTime = boardingTime;
 		this.unboardingTime = unboardingTime;
 		this.waitingTimeUnmet = waitingTimeUnmet;
+		this.statsInterval = statsInterval;
 
 		this.pendingRequests = new ArrayList<>();
 		this.pendingArrivals = new ArrayList<>();
@@ -206,6 +210,7 @@ public class StaticAVSim {
 	private void recordDepartureStats(double timeOfRequest, AutonomousVehicle assignedVehicle,
 									  double waitingTimeForAssignment, double responseTime,
 									  double waitingTimeForAgents, double accessDistance) {
+		totalServedRequests++;
 		StatRequest statRequest = new StatRequest();
 		statRequest.setAssignmentTime(waitingTimeForAssignment);
 		statRequest.setResponseTime(responseTime);
@@ -220,6 +225,7 @@ public class StaticAVSim {
 		stats.incResponseTime(responseTime);
 		if (responseTime < 60) {
 			stats.incQuickMetDemand();
+			quickServedRequests++;
 		}
 	}
 
@@ -234,7 +240,19 @@ public class StaticAVSim {
 		//vehicle.incServiceDistance();
 	}
 
+	public void recordGeneralStats(double time) {
+		if (time%statsInterval == 0) {
+			stats.recordStats((int)time, pendingRequests.size(), vehiclesInUse.size(),
+					vehicleBlockedUntil.size(), availableVehicles.size(), quickServedRequests,
+					totalServedRequests);
+			// reset stats
+			quickServedRequests = 0;
+			totalServedRequests = 0;
+		}
+	}
+
 	public void writeResults(String iterationFilename) {
 		stats.printResults(iterationFilename);
 	}
+
 }

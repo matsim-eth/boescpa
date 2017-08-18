@@ -53,6 +53,7 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 		this.controlerIO = controlerIO;
 		this.config = config;
 
+		int statsInterval = avConfig.getStatsInterval();
 		double boardingTime = avConfig.getBoardingTime();
 		double unboardingTime = avConfig.getUnboardingTime();
 
@@ -62,7 +63,7 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 			AVAssignment avAssignment = operatorConfig.getAVAssignment();
 			avAssignment.setTravelTimeCalculator(router);
 			StaticAVSim avSim = new StaticAVSim(router, avAssignment, levelOfService,
-					boardingTime, unboardingTime, waitingTimeUnmet);
+					boardingTime, unboardingTime, waitingTimeUnmet, statsInterval);
 			this.avSims.put(operatorConfig.getOperatorId(), avSim);
 		}
 	}
@@ -87,6 +88,7 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 			avSim.handlePendingArrivals();
 			avSim.freeBlockedVehicles(mobsimAfterSimStepEvent.getSimulationTime());
 			avSim.handlePendingRequests(mobsimAfterSimStepEvent.getSimulationTime());
+			avSim.recordGeneralStats(mobsimAfterSimStepEvent.getSimulationTime());
 		}
 	}
 
