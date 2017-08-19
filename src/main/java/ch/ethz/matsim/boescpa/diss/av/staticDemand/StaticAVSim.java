@@ -214,8 +214,8 @@ public class StaticAVSim {
 		StatRequest statRequest = new StatRequest();
 		statRequest.setAssignmentTime(waitingTimeForAssignment);
 		statRequest.setResponseTime(responseTime);
-		statRequest.setStartTime(timeOfRequest);
-		assignedVehicle.setStatRequest(new StatRequest());
+		statRequest.setTimeOfRequest(timeOfRequest);
+		assignedVehicle.setStatRequest(statRequest);
 		assignedVehicle.incNumberOfServices();
 		assignedVehicle.incAccessTime(responseTime - waitingTimeForAssignment);
 		assignedVehicle.incAccessDistance(accessDistance);

@@ -33,7 +33,7 @@ public class StatRequest {
 
 	private double assignmentTime = -1;
 	private double responseTime = -1;
-	private double startTime = -1;
+	private double timeOfRequest = -1;
 	private double duration = -1;
 	private double distance = -1;
 
@@ -45,8 +45,8 @@ public class StatRequest {
 		this.responseTime = responseTime;
 	}
 
-	void setStartTime(double startTime) {
-		this.startTime = startTime;
+	void setTimeOfRequest(double timeOfRequest) {
+		this.timeOfRequest = timeOfRequest;
 	}
 
 	void setDuration(double duration) {
@@ -58,8 +58,7 @@ public class StatRequest {
 	}
 
 	public static String getStatsDescr() {
-		return "met"
-				+ Stats.delimiter + "timeOfRequest"
+		return "timeOfRequest"
 				+ Stats.delimiter + "assignmentTime"
 				+ Stats.delimiter + "responseTime"
 				+ Stats.delimiter + "requestDuration"
@@ -67,7 +66,7 @@ public class StatRequest {
 	}
 
 	public String getStats() {
-		return Stats.delimiter + startTime
+		return timeOfRequest
 				+ Stats.delimiter + assignmentTime
 				+ Stats.delimiter + responseTime
 				+ Stats.delimiter + duration
