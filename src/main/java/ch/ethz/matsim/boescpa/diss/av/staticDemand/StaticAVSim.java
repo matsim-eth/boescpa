@@ -21,11 +21,19 @@
 
 package ch.ethz.matsim.boescpa.diss.av.staticDemand;
 
+import ch.ethz.matsim.av.data.AVVehicle;
+import ch.ethz.matsim.av.passenger.AVRequest;
+import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.PersonArrivalEvent;
 import org.matsim.api.core.v01.events.PersonDepartureEvent;
+import org.matsim.api.core.v01.network.Link;
+import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.api.core.v01.population.Route;
+import org.matsim.core.network.NetworkUtils;
+import org.matsim.core.utils.collections.QuadTree;
+import org.matsim.core.utils.geometry.CoordUtils;
 
 import java.util.*;
 
@@ -35,8 +43,12 @@ import java.util.*;
  * @author boescpa
  */
 public class StaticAVSim {
+	// todo-boescpa: Move these to config...
+	private final static double DETOUR_FACTOR = 1.44;
+	private final static double TELEPORT_SPEED = 13.5;
+
 	private final AVRouter router;
-	private final AVAssignment avAssignment;
+	private final Network network;
 
 	private final double levelOfService;
 	private final double boardingTime;
@@ -49,16 +61,17 @@ public class StaticAVSim {
 	private final Map<Id<Person>, AutonomousVehicle> vehiclesInUse;
 	private final Map<AutonomousVehicle, Double> vehicleBlockedUntil;
 	private final List<AutonomousVehicle> availableVehicles;
+	private final QuadTree<AutonomousVehicle> availableVehiclesTree;
 
 	private Stats stats;
 	private int quickServedRequests;
 	private int totalServedRequests;
 
-	public StaticAVSim(AVRouter router, AVAssignment avAssignment,
+	public StaticAVSim(AVRouter router, Network network, double[] bounds,
 					   double levelOfService, double boardingTime, double unboardingTime,
 					   double waitingTimeUnmet, int statsInterval) {
 		this.router = router;
-		this.avAssignment = avAssignment;
+		this.network = network;
 
 		this.levelOfService = levelOfService;
 		this.boardingTime = boardingTime;
@@ -71,7 +84,10 @@ public class StaticAVSim {
 		this.vehiclesInUse = new HashMap<>();
 		this.vehicleBlockedUntil = new LinkedHashMap<>();
 		this.availableVehicles = new LinkedList<>();
+		this.availableVehiclesTree = new QuadTree<>(bounds[0], bounds[1], bounds[2], bounds[3]);
 		this.reset();
+
+		//
 	}
 
 	public void reset() {
@@ -98,15 +114,16 @@ public class StaticAVSim {
 		for (AutonomousVehicle vehicle : vehiclesToFree) {
 			vehicleBlockedUntil.remove(vehicle);
 			availableVehicles.add(vehicle);
+			Coord vehiclePostion = network.getLinks().get(vehicle.getPosition()).getCoord();
+			availableVehiclesTree.put(vehiclePostion.getX(), vehiclePostion.getY(), vehicle);
 		}
 	}
 
 	void handlePendingRequests(double simulationTime) {
 		for (int i = pendingRequests.size() - 1; i > -1; i--) {
 			PersonDepartureEvent request = pendingRequests.get(i);
-			AutonomousVehicle assignedVehicle = avAssignment.assignVehicleToRequest(request,
-					levelOfService - (simulationTime - request.getTime()),
-					availableVehicles);
+			AutonomousVehicle assignedVehicle = findClosestVehicle(request.getLinkId(),
+					levelOfService - (simulationTime - request.getTime()));
 			if (assignedVehicle != null) {
 				// We have a vehicle and it's getting on the way.
 				handleMetRequests(request, assignedVehicle, simulationTime);
@@ -123,6 +140,8 @@ public class StaticAVSim {
 								   double simulationTime) {
 		// 1. Get the vehicle:
 		availableVehicles.remove(assignedVehicle);
+		Coord vehiclePostion = network.getLinks().get(assignedVehicle.getPosition()).getCoord();
+		availableVehiclesTree.remove(vehiclePostion.getX(), vehiclePostion.getY(), assignedVehicle);
 		vehiclesInUse.put(request.getPersonId(), assignedVehicle);
 		// 2. Move vehicle to agent:
 		Route accessRoute = this.router.getRoute(assignedVehicle.getPosition(), request.getLinkId(),
@@ -202,6 +221,21 @@ public class StaticAVSim {
 			handleUnmetRequests(request);
 		}
 		handlePendingArrivals();
+	}
+
+	private AutonomousVehicle findClosestVehicle(Id<Link> linkId, double remainingTime) {
+		Coord coord = network.getLinks().get(linkId).getCoord();
+		AutonomousVehicle closestVehicle = availableVehiclesTree.size() > 0 ?
+				availableVehiclesTree.getClosest(coord.getX(), coord.getY()) : null;
+		if (closestVehicle != null) {
+			double travelDistance = CoordUtils.calcEuclideanDistance(
+					coord, network.getLinks().get(closestVehicle.getPosition()).getCoord());
+			double travelTimeVehicle = travelDistance * DETOUR_FACTOR / TELEPORT_SPEED;
+			if (travelTimeVehicle <= remainingTime) {
+				return closestVehicle;
+			}
+		}
+		return closestVehicle;
 	}
 
 	// ******************************************************************************************

@@ -25,12 +25,14 @@ import org.matsim.api.core.v01.events.PersonArrivalEvent;
 import org.matsim.api.core.v01.events.PersonDepartureEvent;
 import org.matsim.api.core.v01.events.handler.PersonArrivalEventHandler;
 import org.matsim.api.core.v01.events.handler.PersonDepartureEventHandler;
+import org.matsim.api.core.v01.network.Network;
 import org.matsim.core.config.Config;
 import org.matsim.core.controler.OutputDirectoryHierarchy;
 import org.matsim.core.controler.events.IterationEndsEvent;
 import org.matsim.core.controler.listener.IterationEndsListener;
 import org.matsim.core.mobsim.framework.events.MobsimAfterSimStepEvent;
 import org.matsim.core.mobsim.framework.listeners.MobsimAfterSimStepListener;
+import org.matsim.core.network.NetworkUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -47,7 +49,8 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 	private final OutputDirectoryHierarchy controlerIO;
 	private final Config config;
 
-	StaticAVSimEventListener(Config config, OutputDirectoryHierarchy controlerIO, AVRouter router) {
+	StaticAVSimEventListener(Config config, Network network, OutputDirectoryHierarchy controlerIO,
+							 AVRouter router) {
 		StaticAVConfig avConfig = (StaticAVConfig)config.getModules().get(StaticAVConfig.NAME);
 		this.avSims = new HashMap<>();
 		this.controlerIO = controlerIO;
@@ -56,13 +59,13 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 		int statsInterval = avConfig.getStatsInterval();
 		double boardingTime = avConfig.getBoardingTime();
 		double unboardingTime = avConfig.getUnboardingTime();
+		double[] bounds = avConfig.getBoundingBox() != null ? avConfig.getBoundingBox() :
+				NetworkUtils.getBoundingBox(network.getNodes().values());;
 
 		for (StaticAVConfig.AVOperatorConfig operatorConfig : avConfig.getOperatorConfigs()) {
 			double levelOfService = operatorConfig.getLevelOfService();
 			double waitingTimeUnmet = operatorConfig.getWaitingTimeUnmet();
-			AVAssignment avAssignment = operatorConfig.getAVAssignment();
-			avAssignment.setTravelTimeCalculator(router);
-			StaticAVSim avSim = new StaticAVSim(router, avAssignment, levelOfService,
+			StaticAVSim avSim = new StaticAVSim(router, network, bounds, levelOfService,
 					boardingTime, unboardingTime, waitingTimeUnmet, statsInterval);
 			this.avSims.put(operatorConfig.getOperatorId(), avSim);
 		}

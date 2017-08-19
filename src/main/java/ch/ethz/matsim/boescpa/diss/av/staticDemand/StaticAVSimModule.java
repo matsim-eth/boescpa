@@ -58,10 +58,11 @@ public class StaticAVSimModule extends AbstractModule {
 	@Inject
 	@Provides
 	@Named(instanceName)
-	public static StaticAVSimEventListener provideAVSim(Config config, AVRouter avRouter,
+	public static StaticAVSimEventListener provideAVSim(Config config, AVRouter avRouter, Network network,
 														OutputDirectoryHierarchy controlerIO) {
 		if (staticAVSimEventListener == null) {
-			staticAVSimEventListener = new StaticAVSimEventListener(config, controlerIO, avRouter);
+			staticAVSimEventListener = new StaticAVSimEventListener(config, network, controlerIO,
+					avRouter);
 		}
 		return staticAVSimEventListener;
 	}

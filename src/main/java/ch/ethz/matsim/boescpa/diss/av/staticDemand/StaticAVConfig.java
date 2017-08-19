@@ -26,6 +26,7 @@ import org.matsim.core.config.ConfigGroup;
 import org.matsim.core.config.ReflectiveConfigGroup;
 import org.matsim.core.trafficmonitoring.TravelTimeCalculator;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -41,11 +42,13 @@ public class StaticAVConfig extends	ReflectiveConfigGroup {
 	final static String BOARDING_TIME = "boardingDuration";
 	final static String UNBOARDING_TIME = "unboardingDuration";
 	final static String OPERATOR = "operator";
+	final static String BOUNDING_BOX = "boundingBox";
 
 	final private Set<AVOperatorConfig> operators = new HashSet<>();
 	private double boardingTime;
 	private double unboardingTime;
 	private int statsInterval = 5*60;
+	private double[] boundingBox = null;
 
 	public StaticAVConfig() {
 		super(NAME);
@@ -118,6 +121,19 @@ public class StaticAVConfig extends	ReflectiveConfigGroup {
 	@StringGetter(STATS_INTERVAL)
 	public int getStatsInterval() {
 		return statsInterval;
+	}
+
+	@StringSetter(BOUNDING_BOX)
+	public void setBoundingBox(String boundingBox) {
+		// minx, miny, maxx, maxy
+		this.boundingBox = Arrays.stream(boundingBox.split(","))
+				.mapToDouble(Double::parseDouble)
+				.toArray();
+	}
+
+	@StringGetter(BOUNDING_BOX)
+	public double[] getBoundingBox() {
+		return boundingBox;
 	}
 
 	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
