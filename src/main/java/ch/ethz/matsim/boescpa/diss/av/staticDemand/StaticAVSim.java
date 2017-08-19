@@ -43,12 +43,9 @@ import java.util.*;
  * @author boescpa
  */
 public class StaticAVSim {
-	// todo-boescpa: Move these to config...
-	private final static double DETOUR_FACTOR = 1.44;
-	private final static double TELEPORT_SPEED = 13.5;
-
 	private final AVRouter router;
 	private final Network network;
+	private final AVAssignment avAssignment;
 
 	private final double levelOfService;
 	private final double boardingTime;
@@ -67,11 +64,12 @@ public class StaticAVSim {
 	private int quickServedRequests;
 	private int totalServedRequests;
 
-	public StaticAVSim(AVRouter router, Network network, double[] bounds,
+	public StaticAVSim(AVRouter router, Network network, double[] bounds, AVAssignment avAssignment,
 					   double levelOfService, double boardingTime, double unboardingTime,
 					   double waitingTimeUnmet, int statsInterval) {
 		this.router = router;
 		this.network = network;
+		this.avAssignment = avAssignment;
 
 		this.levelOfService = levelOfService;
 		this.boardingTime = boardingTime;
@@ -122,8 +120,8 @@ public class StaticAVSim {
 	void handlePendingRequests(double simulationTime) {
 		for (int i = pendingRequests.size() - 1; i > -1; i--) {
 			PersonDepartureEvent request = pendingRequests.get(i);
-			AutonomousVehicle assignedVehicle = findClosestVehicle(request.getLinkId(),
-					levelOfService - (simulationTime - request.getTime()));
+			AutonomousVehicle assignedVehicle = avAssignment.findClosestVehicle(availableVehiclesTree,
+					request.getLinkId(), levelOfService - (simulationTime - request.getTime()));
 			if (assignedVehicle != null) {
 				// We have a vehicle and it's getting on the way.
 				handleMetRequests(request, assignedVehicle, simulationTime);
@@ -221,21 +219,6 @@ public class StaticAVSim {
 			handleUnmetRequests(request);
 		}
 		handlePendingArrivals();
-	}
-
-	private AutonomousVehicle findClosestVehicle(Id<Link> linkId, double remainingTime) {
-		Coord coord = network.getLinks().get(linkId).getCoord();
-		AutonomousVehicle closestVehicle = availableVehiclesTree.size() > 0 ?
-				availableVehiclesTree.getClosest(coord.getX(), coord.getY()) : null;
-		if (closestVehicle != null) {
-			double travelDistance = CoordUtils.calcEuclideanDistance(
-					coord, network.getLinks().get(closestVehicle.getPosition()).getCoord());
-			double travelTimeVehicle = travelDistance * DETOUR_FACTOR / TELEPORT_SPEED;
-			if (travelTimeVehicle <= remainingTime) {
-				return closestVehicle;
-			}
-		}
-		return closestVehicle;
 	}
 
 	// ******************************************************************************************

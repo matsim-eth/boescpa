@@ -65,7 +65,9 @@ public class StaticAVSimEventListener implements PersonDepartureEventHandler, Pe
 		for (StaticAVConfig.AVOperatorConfig operatorConfig : avConfig.getOperatorConfigs()) {
 			double levelOfService = operatorConfig.getLevelOfService();
 			double waitingTimeUnmet = operatorConfig.getWaitingTimeUnmet();
-			StaticAVSim avSim = new StaticAVSim(router, network, bounds, levelOfService,
+			AVAssignment avAssignment = operatorConfig.getAVAssignment();
+			avAssignment.setNetwork(network);
+			StaticAVSim avSim = new StaticAVSim(router, network, bounds, avAssignment, levelOfService,
 					boardingTime, unboardingTime, waitingTimeUnmet, statsInterval);
 			this.avSims.put(operatorConfig.getOperatorId(), avSim);
 		}
