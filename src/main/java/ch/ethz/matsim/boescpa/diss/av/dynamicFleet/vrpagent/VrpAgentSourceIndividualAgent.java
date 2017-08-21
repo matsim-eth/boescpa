@@ -44,7 +44,7 @@ import org.matsim.vehicles.VehiclesFactory;
  */
 public class VrpAgentSourceIndividualAgent implements AgentSource {
 	private final AVActionCreator nextActionCreator;
-	private final VrpOptimizer optimizer;
+	private final AVOptimizer optimizer;
 	private final QSim qSim;
 	private final VehiclesFactory vehicleFactory;
 	private VehicleType vehicleType;

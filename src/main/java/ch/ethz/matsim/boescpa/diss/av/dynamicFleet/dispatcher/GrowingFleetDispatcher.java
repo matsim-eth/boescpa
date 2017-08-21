@@ -22,6 +22,7 @@
 package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.dispatcher;
 
 import ch.ethz.matsim.av.config.AVDispatcherConfig;
+import ch.ethz.matsim.av.data.AVData;
 import ch.ethz.matsim.av.data.AVOperator;
 import ch.ethz.matsim.av.data.AVVehicle;
 import ch.ethz.matsim.av.dispatcher.AVDispatcher;
@@ -40,6 +41,7 @@ import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.contrib.dvrp.data.Vehicle;
+import org.matsim.contrib.dvrp.passenger.PassengerEngine;
 import org.matsim.contrib.dvrp.vrpagent.VrpAgentSource;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.network.NetworkUtils;
@@ -67,6 +69,7 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 	final private AVOperator operator;
 	final private EventsManager eventsManager;
 	final private VrpAgentSourceIndividualAgent agentInjector;
+	private final AVData data;
 
 	final private List<AVVehicle> availableVehicles = new LinkedList<>();
 	final private List<AVRequest> pendingRequests = new LinkedList<>();
@@ -76,11 +79,12 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 	final private Map<AVVehicle, Link> vehicleLinks = new HashMap<>();
 
 	public GrowingFleetDispatcher(AVOperator operator, EventsManager eventsManager, Network network,
-								  SingleRideAppender appender) {
+								  SingleRideAppender appender, AVData data) {
 		this.appender = appender;
 		this.operator = operator;
 		this.eventsManager = eventsManager;
 		this.agentInjector = VrpAgentSourceIndividualAgent.getInstance();
+		this.data = data;
 
 		// minx, miny, maxx, maxy
 		double[] bounds = NetworkUtils.getBoundingBox(network.getNodes().values());
@@ -149,9 +153,10 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 		AVVehicle avVehicle = new AVVehicle(id, vehicleLink, 4.0, 0.0, 108000.0);
 		avVehicle.getSchedule().addTask(new AVStayTask(now, avVehicle.getServiceEndTime(), vehicleLink));
 		avVehicle.setOpeartor(operator);
-		eventsManager.processEvent(new AVVehicleAssignmentEvent(avVehicle, now));
 		avVehicle.setDispatcher(this);
+		data.addVehicle(avVehicle);
 		agentInjector.insertIndividualAgentIntoMobsim(avVehicle);
+		eventsManager.processEvent(new AVVehicleAssignmentEvent(avVehicle, now));
 		return avVehicle;
 	}
 
@@ -193,7 +198,10 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 		private ParallelLeastCostPathCalculator router;
 
 		@Inject
-		Map<Id<AVOperator>, AVOperator> operators;
+		private Map<Id<AVOperator>, AVOperator> operators;
+
+		@Inject
+		private AVData data;
 
 		@Override
 		public AVDispatcher createDispatcher(AVDispatcherConfig config) {
@@ -201,7 +209,8 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 					operators.get(config.getParent().getId()),
 					eventsManager,
 					network,
-					new SingleRideAppender(config, router, travelTime)
+					new SingleRideAppender(config, router, travelTime),
+					data
 			);
 		}
 	}
