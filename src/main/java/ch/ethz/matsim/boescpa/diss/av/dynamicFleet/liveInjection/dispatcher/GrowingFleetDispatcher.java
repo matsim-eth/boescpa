@@ -19,7 +19,7 @@
  * *********************************************************************** *
  */
 
-package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.dispatcher;
+package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.dispatcher;
 
 import ch.ethz.matsim.av.config.AVDispatcherConfig;
 import ch.ethz.matsim.av.data.AVData;
@@ -33,7 +33,7 @@ import ch.ethz.matsim.av.passenger.AVRequest;
 import ch.ethz.matsim.av.plcpc.ParallelLeastCostPathCalculator;
 import ch.ethz.matsim.av.schedule.AVStayTask;
 import ch.ethz.matsim.av.schedule.AVTask;
-import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.vrpagent.VrpAgentSourceIndividualAgent;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.vrpagent.VrpAgentSourceIndividualAgent;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.matsim.api.core.v01.Coord;
@@ -41,8 +41,6 @@ import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.contrib.dvrp.data.Vehicle;
-import org.matsim.contrib.dvrp.passenger.PassengerEngine;
-import org.matsim.contrib.dvrp.vrpagent.VrpAgentSource;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.router.util.TravelTime;

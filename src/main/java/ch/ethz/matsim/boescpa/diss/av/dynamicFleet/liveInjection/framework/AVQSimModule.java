@@ -1,4 +1,4 @@
-package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.framework;
+package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.framework;
 
 import ch.ethz.matsim.av.config.AVConfig;
 import ch.ethz.matsim.av.config.AVDispatcherConfig;
@@ -12,7 +12,7 @@ import ch.ethz.matsim.av.framework.AVModule;
 import ch.ethz.matsim.av.passenger.AVRequestCreator;
 import ch.ethz.matsim.av.schedule.AVOptimizer;
 import ch.ethz.matsim.av.vrpagent.AVActionCreator;
-import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.vrpagent.VrpAgentSourceIndividualAgent;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.vrpagent.VrpAgentSourceIndividualAgent;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;

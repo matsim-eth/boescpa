@@ -1,9 +1,9 @@
-package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.framework;
+package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.framework;
 
 import ch.ethz.matsim.av.config.AVConfig;
 import ch.ethz.matsim.av.dispatcher.AVDispatchmentListener;
 import ch.ethz.matsim.av.schedule.AVOptimizer;
-import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.vrpagent.VrpAgentSourceIndividualAgent;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.vrpagent.VrpAgentSourceIndividualAgent;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Provider;

@@ -19,14 +19,14 @@
  * *********************************************************************** *
  */
 
-package ch.ethz.matsim.boescpa.diss.av;
+package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection;
 
 import ch.ethz.matsim.av.framework.AVConfigGroup;
 import ch.ethz.matsim.av.framework.AVModule;
 import ch.ethz.matsim.av.framework.AVUtils;
-import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.dispatcher.GrowingFleetDispatcher;
-import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.framework.AVQSimProvider;
-import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.generator.EmptyFleetGenerator;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.dispatcher.GrowingFleetDispatcher;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.framework.AVQSimProvider;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.generator.EmptyFleetGenerator;
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorConfigGroup;
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorStrategyModule;
 import ch.ethz.matsim.boescpa.diss.baseline.scoring.IVTBaselineScoringModule;
@@ -47,7 +47,7 @@ import java.net.MalformedURLException;
  *
  * @author boescpa
  */
-public class RunMyAVScenario {
+public class RunAVScenario {
 
 	public static void main(String[] args) throws MalformedURLException {
 		String configFile = args[0];

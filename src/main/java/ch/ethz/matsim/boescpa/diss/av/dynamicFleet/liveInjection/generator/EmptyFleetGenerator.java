@@ -19,7 +19,7 @@
  * *********************************************************************** *
  */
 
-package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.generator;
+package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.generator;
 
 import ch.ethz.matsim.av.config.AVGeneratorConfig;
 import ch.ethz.matsim.av.data.AVVehicle;

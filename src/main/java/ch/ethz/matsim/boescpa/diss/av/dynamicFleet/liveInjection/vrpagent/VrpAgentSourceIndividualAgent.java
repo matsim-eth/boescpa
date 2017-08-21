@@ -19,7 +19,7 @@
  * *********************************************************************** *
  */
 
-package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.vrpagent;
+package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.vrpagent;
 
 import ch.ethz.matsim.av.data.AVVehicle;
 import ch.ethz.matsim.av.schedule.AVOptimizer;
@@ -27,7 +27,6 @@ import ch.ethz.matsim.av.vrpagent.AVActionCreator;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.contrib.dvrp.data.Vehicle;
-import org.matsim.contrib.dvrp.optimizer.VrpOptimizer;
 import org.matsim.contrib.dvrp.vrpagent.VrpAgentLogic;
 import org.matsim.contrib.dynagent.DynAgent;
 import org.matsim.core.mobsim.framework.AgentSource;
