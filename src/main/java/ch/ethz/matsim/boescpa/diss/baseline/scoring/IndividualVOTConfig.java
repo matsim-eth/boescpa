@@ -29,7 +29,7 @@ import org.matsim.core.config.ReflectiveConfigGroup;
  * @author boescpa
  */
 public class IndividualVOTConfig extends ReflectiveConfigGroup {
-	public final static String NAME = "individualVOTConfig";
+	public final static String NAME = "IndividualVOTConfig";
 
 	final static String VOT_ELASTICITY = "votElasticity";
 	final static String REFERENCE_INCOME = "referenceHouseholdIncome";
