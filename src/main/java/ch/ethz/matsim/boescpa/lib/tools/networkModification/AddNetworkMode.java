@@ -21,7 +21,7 @@
 
 package ch.ethz.matsim.boescpa.lib.tools.networkModification;
 
-import ch.ethz.matsim.boescpa.lib.tools.NetworkUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.NetworkUtils;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.NetworkWriter;

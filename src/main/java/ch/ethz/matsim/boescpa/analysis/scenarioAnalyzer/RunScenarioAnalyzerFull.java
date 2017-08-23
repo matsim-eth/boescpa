@@ -25,7 +25,7 @@ import org.matsim.api.core.v01.network.Network;
 
 import ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.eventHandlers.*;
 import ch.ethz.matsim.boescpa.analysis.spatialCutters.NoCutter;
-import ch.ethz.matsim.boescpa.lib.tools.NetworkUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.NetworkUtils;
 
 /**
  * An example how to use the scenario analyzer to

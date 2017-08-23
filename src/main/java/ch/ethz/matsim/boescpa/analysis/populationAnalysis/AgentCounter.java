@@ -22,7 +22,7 @@
 package ch.ethz.matsim.boescpa.analysis.populationAnalysis;
 
 import org.matsim.api.core.v01.population.Population;
-import ch.ethz.matsim.boescpa.lib.tools.PopulationUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.PopulationUtils;
 
 /**
  * WHAT IS IT FOR?

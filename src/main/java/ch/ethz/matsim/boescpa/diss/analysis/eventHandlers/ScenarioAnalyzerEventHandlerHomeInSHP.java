@@ -23,7 +23,7 @@ package ch.ethz.matsim.boescpa.diss.analysis.eventHandlers;
 
 import ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.eventHandlers.ScenarioAnalyzerEventHandler;
 import ch.ethz.matsim.boescpa.analysis.spatialCutters.SpatialCutter;
-import ch.ethz.matsim.boescpa.lib.tools.SHPFileUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.SHPFileUtils;
 import ch.ethz.matsim.boescpa.lib.tools.coordUtils.CoordAnalyzer;
 import com.vividsolutions.jts.geom.Geometry;
 import org.matsim.api.core.v01.Coord;

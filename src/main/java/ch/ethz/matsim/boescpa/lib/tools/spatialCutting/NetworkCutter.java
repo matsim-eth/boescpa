@@ -33,7 +33,7 @@ import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.network.io.NetworkReaderMatsimV1;
 import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.core.utils.geometry.CoordUtils;
-import ch.ethz.matsim.boescpa.lib.tools.NetworkUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.NetworkUtils;
 
 import java.util.HashSet;
 import java.util.Set;

@@ -25,7 +25,7 @@ import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.events.EventsReaderXMLv1;
 import org.matsim.core.events.EventsUtils;
 
-import ch.ethz.matsim.boescpa.lib.tools.NetworkUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.NetworkUtils;
 
 import java.util.List;
 

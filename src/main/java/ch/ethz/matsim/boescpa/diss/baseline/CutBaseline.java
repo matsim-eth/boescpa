@@ -21,10 +21,10 @@
 
 package ch.ethz.matsim.boescpa.diss.baseline;
 
-import ch.ethz.matsim.boescpa.lib.tools.FacilityUtils;
-import ch.ethz.matsim.boescpa.lib.tools.NetworkUtils;
-import ch.ethz.matsim.boescpa.lib.tools.PopulationUtils;
-import ch.ethz.matsim.boescpa.lib.tools.SHPFileUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.FacilityUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.NetworkUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.PopulationUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.SHPFileUtils;
 import ch.ethz.matsim.boescpa.lib.tools.coordUtils.CoordAnalyzer;
 import com.vividsolutions.jts.geom.Geometry;
 import org.matsim.api.core.v01.Coord;

@@ -26,7 +26,7 @@ import org.matsim.api.core.v01.Coord;
 import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.core.utils.gis.ShapeFileReader;
 import org.opengis.feature.simple.SimpleFeature;
-import ch.ethz.matsim.boescpa.lib.tools.SHPFileUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.SHPFileUtils;
 
 import java.util.HashSet;
 import java.util.Set;

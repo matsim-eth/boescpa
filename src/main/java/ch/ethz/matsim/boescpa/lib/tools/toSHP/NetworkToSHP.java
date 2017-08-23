@@ -47,7 +47,7 @@ import java.util.Collection;
  *
  * @author boescpa
  */
-public class networkToSHP {
+public class NetworkToSHP {
 
 	public static void main(String[] args) throws Exception {
 		final String pathToNetwork = args[0];

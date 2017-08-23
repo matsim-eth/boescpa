@@ -19,56 +19,38 @@
  * *********************************************************************** *
  */
 
-package ch.ethz.matsim.boescpa.lib.tools;
+package ch.ethz.matsim.boescpa.lib.tools.utils;
 
 import org.matsim.api.core.v01.Scenario;
-import org.matsim.api.core.v01.network.Link;
-import org.matsim.api.core.v01.network.Network;
-import org.matsim.api.core.v01.network.Node;
+import org.matsim.api.core.v01.population.Population;
 import org.matsim.core.config.ConfigUtils;
-import org.matsim.core.network.io.MatsimNetworkReader;
+import org.matsim.core.population.io.PopulationReader;
 import org.matsim.core.scenario.ScenarioUtils;
 
 /**
- * Provides different useful static methods around networks...
+ * Provides different useful static methods around populations...
  *
  * @author boescpa
  */
-public class NetworkUtils {
+public class PopulationUtils {
 
 	/**
-	 * Directly loads and provides a network given a path to a network file.
+	 * Directly loads and provides a population given a path to a population file.
 	 *
-	 * @param path2Network
-	 * @return Loaded network
+	 * @param path2Population
+	 * @return Loaded population
 	 */
-	public static Network readNetwork(String path2Network) {
+	public static Population readPopulation(String path2Population) {
 		Scenario scenario = ScenarioUtils.createScenario(ConfigUtils.createConfig());
-		new MatsimNetworkReader(scenario.getNetwork()).readFile(path2Network);
-		return scenario.getNetwork();
+		new PopulationReader(scenario).readFile(path2Population);
+		return scenario.getPopulation();
 	}
 
-	public static Network getModeFilteredNetwork(Network network, String mode) {
-		Network onlyModeNetwork = org.matsim.core.network.NetworkUtils.createNetwork();
-		for (Link link : network.getLinks().values()) {
-			if (link.getAllowedModes().contains(mode)) {
-				addLink(onlyModeNetwork, link);
-			}
-		}
-		return onlyModeNetwork;
+	/**
+	 * Creates and returns an empty population.
+	 */
+	public static Population getEmptyPopulation() {
+		return ScenarioUtils.createScenario(ConfigUtils.createConfig()).getPopulation();
 	}
 
-	private static void addLink(Network network, Link link) {
-		if (!network.getNodes().containsKey(link.getFromNode().getId())) {
-			Node node = network.getFactory().createNode(link.getFromNode().getId(), link.getFromNode().getCoord());
-			network.addNode(node);
-		}
-		if (!network.getNodes().containsKey(link.getToNode().getId())) {
-			Node node = network.getFactory().createNode(link.getToNode().getId(), link.getToNode().getCoord());
-			network.addNode(node);
-		}
-		network.addLink(link);
-		link.setFromNode(network.getNodes().get(link.getFromNode().getId()));
-		link.setToNode(network.getNodes().get(link.getToNode().getId()));
-	}
 }

@@ -64,7 +64,7 @@ public class PopulationReset {
 		}
 
 		// Reset population:
-		final Population population = ch.ethz.matsim.boescpa.lib.tools.PopulationUtils.readPopulation(pathToInputPopulation);
+		final Population population = ch.ethz.matsim.boescpa.lib.tools.utils.PopulationUtils.readPopulation(pathToInputPopulation);
 		final Population newPopulation = PopulationUtils.createPopulation(ConfigUtils.createConfig());
 		popFactory = newPopulation.getFactory();
 		ResetPerson resetPersonInstance;

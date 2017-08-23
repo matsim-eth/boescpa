@@ -27,7 +27,7 @@ import org.matsim.api.core.v01.population.Population;
 import org.matsim.core.utils.charts.BarChart;
 import org.matsim.core.utils.collections.Tuple;
 import org.matsim.core.utils.io.IOUtils;
-import ch.ethz.matsim.boescpa.lib.tools.PopulationUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.PopulationUtils;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

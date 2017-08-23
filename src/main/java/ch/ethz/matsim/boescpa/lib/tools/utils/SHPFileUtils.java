@@ -18,7 +18,7 @@
  *                                                                         *
  * *********************************************************************** */
 
-package ch.ethz.matsim.boescpa.lib.tools;
+package ch.ethz.matsim.boescpa.lib.tools.utils;
 
 import java.util.Set;
 

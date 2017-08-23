@@ -24,8 +24,8 @@ package ch.ethz.matsim.boescpa.diss.analysis;
 import ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.ScenarioAnalyzer;
 import ch.ethz.matsim.boescpa.analysis.spatialCutters.NoCutter;
 import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.*;
-import ch.ethz.matsim.boescpa.lib.tools.NetworkUtils;
-import ch.ethz.matsim.boescpa.lib.tools.PopulationUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.NetworkUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.PopulationUtils;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.Population;
 

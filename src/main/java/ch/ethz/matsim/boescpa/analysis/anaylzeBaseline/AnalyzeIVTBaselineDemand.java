@@ -13,8 +13,8 @@ import ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.eventHandlers.TripActivi
 import ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.eventHandlers.TripAnalyzer;
 import ch.ethz.matsim.boescpa.analysis.spatialCutters.NoCutter;
 import ch.ethz.matsim.boescpa.analysis.trips.*;
-import ch.ethz.matsim.boescpa.lib.tools.NetworkUtils;
-import ch.ethz.matsim.boescpa.lib.tools.PopulationUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.NetworkUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.PopulationUtils;
 
 import java.util.Collections;
 import java.util.LinkedList;

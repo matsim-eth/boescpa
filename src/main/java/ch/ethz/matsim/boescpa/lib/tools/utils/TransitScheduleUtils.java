@@ -19,30 +19,25 @@
  * *********************************************************************** *
  */
 
-package ch.ethz.matsim.boescpa.diss.baseline.calibration;
+package ch.ethz.matsim.boescpa.lib.tools.utils;
 
-import ch.ethz.matsim.boescpa.lib.tools.utils.NetworkUtils;
-import org.matsim.api.core.v01.network.Link;
-import org.matsim.api.core.v01.network.Network;
-import org.matsim.api.core.v01.network.NetworkWriter;
+import org.matsim.api.core.v01.Scenario;
+import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.scenario.ScenarioUtils;
+import org.matsim.pt.transitSchedule.api.TransitSchedule;
+import org.matsim.pt.transitSchedule.api.TransitScheduleReader;
 
 /**
  * WHAT IS IT FOR?
  *
  * @author boescpa
  */
-public class NetworkSpeedsAdapter {
+public class TransitScheduleUtils {
 
-	public static void main(final String[] args) {
-		Network network = NetworkUtils.readNetwork(args[0]);
-		double speedReduction = Double.parseDouble(args[1])/100; // reduction in percentage
-
-		for (Link link : network.getLinks().values()) {
-			if (link.getAllowedModes().contains("car"))
-				link.setFreespeed(link.getFreespeed()*(1 - speedReduction));
-		}
-
-		new NetworkWriter(network).write("network_"+args[1]+"PrctReducedSpeed.xml.gz");
+	public static TransitSchedule readSchedule(String pathToSchedule) {
+		Scenario scenario = ScenarioUtils.createScenario(ConfigUtils.createConfig());
+		new TransitScheduleReader(scenario).readFile(pathToSchedule);
+		return scenario.getTransitSchedule();
 	}
 
 }
