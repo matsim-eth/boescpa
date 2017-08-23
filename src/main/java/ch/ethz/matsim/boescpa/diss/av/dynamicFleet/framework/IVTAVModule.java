@@ -19,6 +19,7 @@ import ch.ethz.matsim.av.routing.AVRoute;
 import ch.ethz.matsim.av.routing.AVRouteFactory;
 import ch.ethz.matsim.av.routing.AVRoutingModule;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.scoring.IVTAVScoringFunctionFactory;
+import ch.ethz.matsim.boescpa.diss.baseline.scoring.IVTBaselineScoringFunctionFactory;
 import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -26,6 +27,7 @@ import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.contrib.dvrp.run.DvrpModule;
 import org.matsim.contrib.dvrp.trafficmonitoring.VrpTravelTimeModules;
@@ -34,10 +36,12 @@ import org.matsim.core.config.ConfigGroup;
 import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.population.routes.RouteFactories;
 import org.matsim.core.router.Dijkstra;
+import org.matsim.core.router.StageActivityTypesImpl;
 import org.matsim.core.router.costcalculators.OnlyTimeDependentTravelDisutility;
 import org.matsim.core.router.util.LeastCostPathCalculator;
 import org.matsim.core.router.util.TravelTime;
 import org.matsim.core.scoring.ScoringFunctionFactory;
+import org.matsim.pt.PtConstants;
 import org.matsim.vehicles.VehicleType;
 import org.matsim.vehicles.VehicleUtils;
 
@@ -191,5 +195,10 @@ public class IVTAVModule extends AbstractModule {
         }
 
         return vehicles;
+    }
+
+    @Provides @Singleton
+    public IVTAVScoringFunctionFactory provideIVTAVScoringFunctionFactory(Scenario scenario, AVConfig avConfig) {
+        return new IVTAVScoringFunctionFactory(scenario, new StageActivityTypesImpl(PtConstants.TRANSIT_ACTIVITY_TYPE), avConfig);
     }
 }
