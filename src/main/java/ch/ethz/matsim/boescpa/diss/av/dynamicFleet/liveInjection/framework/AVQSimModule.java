@@ -19,6 +19,7 @@ import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Network;
+import org.matsim.contrib.dvrp.optimizer.VrpOptimizerWithOnlineTracking;
 import org.matsim.contrib.dvrp.passenger.PassengerEngine;
 import org.matsim.contrib.dvrp.vrpagent.VrpAgentSource;
 import org.matsim.contrib.dvrp.vrpagent.VrpLegs;
@@ -62,7 +63,8 @@ public class AVQSimModule extends com.google.inject.AbstractModule {
     @Provides
     @Singleton
     VrpLegs.LegCreator provideLegCreator(AVOptimizer avOptimizer) {
-        return VrpLegs.createLegWithOnlineTrackerCreator(avOptimizer, qsim.getSimTimer());
+        return VrpLegs.createLegWithOnlineTrackerCreator(
+                (VrpOptimizerWithOnlineTracking) avOptimizer, qsim.getSimTimer());
     }
 
     @Provides @Singleton
