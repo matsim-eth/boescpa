@@ -26,6 +26,7 @@ import ch.ethz.matsim.boescpa.diss.av.staticDemand.StaticAVSimModule;
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorConfigGroup;
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorStrategyModule;
 import ch.ethz.matsim.boescpa.diss.baseline.scoring.IVTBaselineScoringModule;
+import ch.ethz.matsim.boescpa.diss.baseline.scoring.IndividualVOTConfig;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
@@ -45,7 +46,7 @@ public class RunStaticAVSim {
 		// Configuration
 		Config config = ConfigUtils.loadConfig(configFile,
 				new StaticAVConfig(), // AV-modules
-				new BlackListedTimeAllocationMutatorConfigGroup()); // IVT-Modules
+				new BlackListedTimeAllocationMutatorConfigGroup(), new IndividualVOTConfig()); // IVT-Modules
 		Scenario scenario = ScenarioUtils.loadScenario(config);
 
 		// Controller setup

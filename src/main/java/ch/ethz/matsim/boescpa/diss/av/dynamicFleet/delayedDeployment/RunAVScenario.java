@@ -31,6 +31,7 @@ import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.dispatcher.
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorConfigGroup;
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorStrategyModule;
 import ch.ethz.matsim.boescpa.diss.baseline.scoring.IVTBaselineScoringModule;
+import ch.ethz.matsim.boescpa.diss.baseline.scoring.IndividualVOTConfig;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.contrib.dvrp.run.DvrpConfigGroup;
 import org.matsim.contrib.dvrp.trafficmonitoring.VrpTravelTimeModules;
@@ -58,7 +59,7 @@ public class RunAVScenario {
 		dvrpConfigGroup.setTravelTimeEstimationAlpha(0.05);
 		Config config = ConfigUtils.loadConfig(configFile,
 				new AVConfigGroup(), dvrpConfigGroup, new GrowingFleetDispatcherConfig(), // AV-modules
-				new BlackListedTimeAllocationMutatorConfigGroup()); // IVT-Modules
+				new BlackListedTimeAllocationMutatorConfigGroup(), new IndividualVOTConfig()); // IVT-Modules
 		Scenario scenario = ScenarioUtils.loadScenario(config);
 
 		// Controller setup

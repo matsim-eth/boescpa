@@ -19,40 +19,45 @@
  * *********************************************************************** *
  */
 
-package ch.ethz.matsim.boescpa.diss.baseline;
+package ch.ethz.matsim.boescpa.diss.baseline.scoring;
 
-import ch.ethz.matsim.boescpa.diss.baseline.replanning.*;
-import ch.ethz.matsim.boescpa.diss.baseline.scoring.IVTBaselineScoringModule;
-import ch.ethz.matsim.boescpa.diss.baseline.scoring.IndividualVOTConfig;
-import org.matsim.api.core.v01.Scenario;
-import org.matsim.core.config.Config;
-import org.matsim.core.config.ConfigUtils;
-import org.matsim.core.controler.Controler;
-import org.matsim.core.scenario.ScenarioUtils;
+import org.matsim.core.config.ReflectiveConfigGroup;
 
 /**
  * WHAT IS IT FOR?
  *
  * @author boescpa
  */
-public class RunBaseline {
+public class IndividualVOTConfig extends ReflectiveConfigGroup {
+	public final static String NAME = "individualVOTConfig";
 
-	static public void main(String[] args) {
-		String configFile = args[0];
+	final static String VOT_ELASTICITY = "votElasticity";
+	final static String REFERENCE_INCOME = "referenceHouseholdIncome";
 
-		// Configuration
-		Config config = ConfigUtils.loadConfig(configFile,
-				new BlackListedTimeAllocationMutatorConfigGroup(),
-				new IndividualVOTConfig());
-		Scenario scenario = ScenarioUtils.loadScenario(config);
+	private double votElasticity = 0.0; // neutralizes the current implementation of individualVOT
+	private double referenceHouseholdIncome = 5000.0;
 
-		// Controller setup
-		Controler controler = new Controler(scenario);
-		controler.addOverridingModule(new BlackListedTimeAllocationMutatorStrategyModule());
-		controler.addOverridingModule(new IVTBaselineScoringModule());
-
-		// Run
-		controler.run();
+	public IndividualVOTConfig() {
+		super(NAME);
 	}
 
+	@StringGetter(VOT_ELASTICITY)
+	public double getVotElasticity() {
+		return votElasticity;
+	}
+
+	@StringSetter(VOT_ELASTICITY)
+	public void setVotElasticity(String votElasticity) {
+		this.votElasticity = Double.parseDouble(votElasticity);
+	}
+
+	@StringGetter(REFERENCE_INCOME)
+	public double getReferenceHouseholdIncome() {
+		return referenceHouseholdIncome;
+	}
+
+	@StringSetter(REFERENCE_INCOME)
+	public void setReferenceHouseholdIncome(String referenceHouseholdIncome) {
+		this.referenceHouseholdIncome = Double.parseDouble(referenceHouseholdIncome);
+	}
 }

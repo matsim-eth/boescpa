@@ -21,23 +21,21 @@
 
 package ch.ethz.matsim.boescpa.diss.baseline.scoring;
 
-import ch.ethz.matsim.boescpa.diss.baseline.deprecated.DestinationEspilonScoring;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.population.Activity;
 import org.matsim.api.core.v01.population.Person;
-import org.matsim.contrib.locationchoice.bestresponse.DestinationChoiceBestResponseContext;
 import org.matsim.contrib.socnetsim.jointtrips.scoring.BlackListedActivityScoringFunction;
+import org.matsim.core.config.Config;
 import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
-import org.matsim.core.config.groups.ScenarioConfigGroup;
 import org.matsim.core.router.StageActivityTypes;
 import org.matsim.core.router.TripStructureUtils;
 import org.matsim.core.scoring.ScoringFunction;
 import org.matsim.core.scoring.ScoringFunctionFactory;
 import org.matsim.core.scoring.SumScoringFunction;
 import org.matsim.core.scoring.functions.*;
+import org.matsim.households.Household;
+import org.matsim.households.PersonHouseholdMapping;
 import org.matsim.utils.objectattributes.ObjectAttributes;
 
 import java.util.HashMap;
@@ -57,6 +55,7 @@ public class IVTBaselineScoringFunctionFactory implements ScoringFunctionFactory
 
 	// very expensive to initialize:only do once!
 	private final Map<Id, ScoringParameters> individualParameters = new HashMap<>();
+	private final PersonHouseholdMapping personHouseholdMapping;
 
 	// /////////////////////////////////////////////////////////////////////////
 	// constructors
@@ -66,6 +65,7 @@ public class IVTBaselineScoringFunctionFactory implements ScoringFunctionFactory
 			final StageActivityTypes typesNotToScore ) {
 		this.scenario = scenario;
 		this.blackList = typesNotToScore;
+		this.personHouseholdMapping = new PersonHouseholdMapping(scenario.getHouseholds());
 	}
 
 
@@ -77,7 +77,7 @@ public class IVTBaselineScoringFunctionFactory implements ScoringFunctionFactory
 
 		final SumScoringFunction scoringFunctionAccumulator = new SumScoringFunction();
 		final ScoringParameters params =
-				createParams( person , config , scenario.getConfig().scenario(), personAttributes );
+				createParams( person , config , scenario.getConfig(), personAttributes );
 
 		// activities
 		scoringFunctionAccumulator.addScoringFunction(
@@ -98,14 +98,16 @@ public class IVTBaselineScoringFunctionFactory implements ScoringFunctionFactory
 	private ScoringParameters createParams(
 			final Person person,
 			final PlanCalcScoreConfigGroup config,
-			final ScenarioConfigGroup scenarioConfig,
+			final Config scenarioConfig,
 			final ObjectAttributes personAttributes) {
 		if ( individualParameters.containsKey( person.getId() ) ) {
 			return individualParameters.get( person.getId() );
 		}
 
+		// Individual activity parameters:
 		final ScoringParameters.Builder builder =
-				new ScoringParameters.Builder(config, config.getScoringParameters(null), scenarioConfig);
+				new ScoringParameters.Builder(config, config.getScoringParameters(null),
+						scenarioConfig.scenario());
 		final Set<String> handledTypes = new HashSet<>();
 		for ( Activity act : TripStructureUtils.getActivities( person.getSelectedPlan() , blackList ) ) {
 			// XXX works only if no variation of type of activities between plans
@@ -162,6 +164,30 @@ public class IVTBaselineScoringFunctionFactory implements ScoringFunctionFactory
 			builder.setActivityParameters(
 					act.getType(),
 					typeBuilder );
+		}
+
+		// Individual VOT parameters:
+		IndividualVOTConfig individualVOTConfig =
+				(IndividualVOTConfig) scenarioConfig.getModules().get(IndividualVOTConfig.NAME);
+		double votElasticity = individualVOTConfig.getVotElasticity();
+		double referenceIncome = individualVOTConfig.getReferenceHouseholdIncome();
+		Household household = personHouseholdMapping.getHousehold(person.getId());
+		final double income = household.getIncome().getIncome();
+		// todo-boescpa: Check following formula for consistency with votElasiticity-Value!
+		final double votCorrectionFactor = Math.pow(income / referenceIncome, votElasticity);
+
+		// todo-boescpa: Check what to change exactly...
+		//builder.setMarginalUtilityOfMoney(config.getMarginalUtilityOfMoney() * votCorrectionFactor);
+		for (String mode : config.getModes().keySet()) {
+			PlanCalcScoreConfigGroup.ModeParams modeParams = config.getOrCreateModeParams(mode);
+			final ModeUtilityParameters.Builder modeBuilder =
+					new ModeUtilityParameters.Builder(modeParams);
+
+			double marginalUtilityOfTraveling = modeParams.getMarginalUtilityOfTraveling();
+			marginalUtilityOfTraveling *= votCorrectionFactor;
+			modeBuilder.setMarginalUtilityOfTraveling_s(marginalUtilityOfTraveling);
+
+			builder.setModeParameters(mode, modeBuilder);
 		}
 
 		final ScoringParameters params =
