@@ -8,10 +8,10 @@ import ch.ethz.matsim.av.data.AVOperator;
 import ch.ethz.matsim.av.data.AVVehicle;
 import ch.ethz.matsim.av.dispatcher.AVDispatcher;
 import ch.ethz.matsim.av.dispatcher.AVDispatchmentListener;
-import ch.ethz.matsim.av.framework.AVModule;
 import ch.ethz.matsim.av.passenger.AVRequestCreator;
 import ch.ethz.matsim.av.schedule.AVOptimizer;
 import ch.ethz.matsim.av.vrpagent.AVActionCreator;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.framework.IVTAVModule;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.vrpagent.VrpAgentSourceIndividualAgent;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -50,9 +50,9 @@ public class AVQSimModule extends com.google.inject.AbstractModule {
     }
 
     @Provides @Singleton
-    public PassengerEngine providePassengerEngine(EventsManager events, AVRequestCreator requestCreator, AVOptimizer optimizer, @Named(AVModule.AV_MODE) Network network) {
+    public PassengerEngine providePassengerEngine(EventsManager events, AVRequestCreator requestCreator, AVOptimizer optimizer, @Named(IVTAVModule.AV_MODE) Network network) {
         return new PassengerEngine(
-                AVModule.AV_MODE,
+                IVTAVModule.AV_MODE,
                 events,
                 requestCreator,
                 optimizer,
@@ -68,12 +68,12 @@ public class AVQSimModule extends com.google.inject.AbstractModule {
     }
 
     @Provides @Singleton
-    public VrpAgentSource provideAgentSource(AVActionCreator actionCreator, AVData data, AVOptimizer optimizer, @Named(AVModule.AV_MODE) VehicleType vehicleType) {
+    public VrpAgentSource provideAgentSource(AVActionCreator actionCreator, AVData data, AVOptimizer optimizer, @Named(IVTAVModule.AV_MODE) VehicleType vehicleType) {
         return new VrpAgentSource(actionCreator, data, optimizer, qsim, vehicleType);
     }
 
     @Provides @Singleton
-    public VrpAgentSourceIndividualAgent provideAgentSourceIndividualAgent(AVActionCreator actionCreator, AVOptimizer optimizer, @Named(AVModule.AV_MODE) VehicleType vehicleType) {
+    public VrpAgentSourceIndividualAgent provideAgentSourceIndividualAgent(AVActionCreator actionCreator, AVOptimizer optimizer, @Named(IVTAVModule.AV_MODE) VehicleType vehicleType) {
         return VrpAgentSourceIndividualAgent.createInstance(actionCreator, optimizer, qsim, vehicleType);
     }
 

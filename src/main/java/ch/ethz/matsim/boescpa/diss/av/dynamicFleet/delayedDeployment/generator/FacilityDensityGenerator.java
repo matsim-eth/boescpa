@@ -2,8 +2,8 @@ package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.generator;
 
 import ch.ethz.matsim.av.config.AVGeneratorConfig;
 import ch.ethz.matsim.av.data.AVVehicle;
-import ch.ethz.matsim.av.framework.AVModule;
 import ch.ethz.matsim.av.generator.AVGenerator;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.framework.IVTAVModule;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -83,7 +83,7 @@ public class FacilityDensityGenerator implements AVGenerator {
     }
 
     static public class Factory implements AVGeneratorFactory {
-        @Inject @Named(AVModule.AV_MODE) private Network network;
+        @Inject @Named(IVTAVModule.AV_MODE) private Network network;
         @Inject private ActivityFacilities facilities;
 
         @Override

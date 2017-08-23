@@ -22,15 +22,14 @@
 package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment;
 
 import ch.ethz.matsim.av.framework.AVConfigGroup;
-import ch.ethz.matsim.av.framework.AVModule;
 import ch.ethz.matsim.av.framework.AVQSimProvider;
 import ch.ethz.matsim.av.framework.AVUtils;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.dispatcher.GrowingFleetDispatcher;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.dispatcher.GrowingFleetDispatcherConfig;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.generator.FacilityDensityGenerator;
-import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.dispatcher.GrowingFleetDispatcher;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.framework.IVTAVModule;
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorConfigGroup;
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorStrategyModule;
-import ch.ethz.matsim.boescpa.diss.baseline.scoring.IVTBaselineScoringModule;
 import ch.ethz.matsim.boescpa.diss.baseline.scoring.IndividualVOTConfig;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.contrib.dvrp.run.DvrpConfigGroup;
@@ -64,10 +63,12 @@ public class RunAVScenario {
 
 		// Controller setup
 		Controler controler = new Controler(scenario);
+		//	Add IVT modules
+		controler.addOverridingModule(new BlackListedTimeAllocationMutatorStrategyModule());
 		//	Add AV modules
 		controler.addOverridingModule(VrpTravelTimeModules.createTravelTimeEstimatorModule());
 		controler.addOverridingModule(new DynQSimModule<>(AVQSimProvider.class));
-		controler.addOverridingModule(new AVModule());
+		controler.addOverridingModule(new IVTAVModule());
 		controler.addOverridingModule(new AbstractModule() {
 			@Override
 			public void install() {
@@ -79,9 +80,6 @@ public class RunAVScenario {
 						"FacilityDensity").to(FacilityDensityGenerator.Factory.class);
 			}
 		});
-		//	Add IVT modules
-		controler.addOverridingModule(new BlackListedTimeAllocationMutatorStrategyModule());
-		controler.addOverridingModule(new IVTBaselineScoringModule());
 
 		// Run
 		controler.run();

@@ -28,11 +28,11 @@ import ch.ethz.matsim.av.data.AVVehicle;
 import ch.ethz.matsim.av.dispatcher.AVDispatcher;
 import ch.ethz.matsim.av.dispatcher.AVVehicleAssignmentEvent;
 import ch.ethz.matsim.av.dispatcher.utils.SingleRideAppender;
-import ch.ethz.matsim.av.framework.AVModule;
 import ch.ethz.matsim.av.passenger.AVRequest;
 import ch.ethz.matsim.av.plcpc.ParallelLeastCostPathCalculator;
 import ch.ethz.matsim.av.schedule.AVStayTask;
 import ch.ethz.matsim.av.schedule.AVTask;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.framework.IVTAVModule;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.liveInjection.vrpagent.VrpAgentSourceIndividualAgent;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -184,15 +184,15 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 	}
 
 	static public class Factory implements AVDispatcherFactory {
-		@Inject @Named(AVModule.AV_MODE)
+		@Inject @Named(IVTAVModule.AV_MODE)
 		private Network network;
 
 		@Inject private EventsManager eventsManager;
 
-		@Inject @Named(AVModule.AV_MODE)
+		@Inject @Named(IVTAVModule.AV_MODE)
 		private TravelTime travelTime;
 
-		@Inject @Named(AVModule.AV_MODE)
+		@Inject @Named(IVTAVModule.AV_MODE)
 		private ParallelLeastCostPathCalculator router;
 
 		@Inject
