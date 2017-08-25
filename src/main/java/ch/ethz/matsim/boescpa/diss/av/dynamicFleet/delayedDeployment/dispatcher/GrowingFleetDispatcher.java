@@ -25,6 +25,7 @@ import ch.ethz.matsim.av.config.AVDispatcherConfig;
 import ch.ethz.matsim.av.data.AVVehicle;
 import ch.ethz.matsim.av.dispatcher.AVDispatcher;
 import ch.ethz.matsim.av.dispatcher.AVVehicleAssignmentEvent;
+import ch.ethz.matsim.av.dispatcher.multi_od_heuristic.TravelTimeEstimator;
 import ch.ethz.matsim.av.dispatcher.utils.SingleRideAppender;
 import ch.ethz.matsim.av.passenger.AVRequest;
 import ch.ethz.matsim.av.plcpc.ParallelLeastCostPathCalculator;
@@ -59,6 +60,7 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 
 	final private SingleRideAppender appender;
 	final private EventsManager eventsManager;
+	final private TravelTimeEstimator estimator;
 
 	final private List<AVRequest> pendingRequests = new LinkedList<>();
 
@@ -66,24 +68,16 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 	final private QuadTree<AVVehicle> availableVehiclesTree;
 	final private Map<AVVehicle, Link> availableVehicleLinks = new HashMap<>();
 
-	private final double detourFactor;
-	private final double teleportSpeed;
-	private final double levelOfService;
-
-	public GrowingFleetDispatcher(EventsManager eventsManager, Network network,
-								  SingleRideAppender appender,
-								  Config config) {
+	public GrowingFleetDispatcher(EventsManager eventsManager, Network network, TravelTimeEstimator estimator,
+								  SingleRideAppender appender) {
 		this.appender = appender;
 		this.eventsManager = eventsManager;
+		this.estimator = estimator;
 
 		// minx, miny, maxx, maxy
 		double[] bounds = NetworkUtils.getBoundingBox(network.getNodes().values());
 		poolVehiclesTree = new QuadTree<>(bounds[0], bounds[1], bounds[2], bounds[3]);
 		availableVehiclesTree = new QuadTree<>(bounds[0], bounds[1], bounds[2], bounds[3]);
-
-		detourFactor = config.plansCalcRoute().getBeelineDistanceFactors().get("undefined");
-		teleportSpeed = config.plansCalcRoute().getTeleportedModeSpeeds().get("undefined");
-		levelOfService = ((GrowingFleetDispatcherConfig)config.getModules().get(GrowingFleetDispatcherConfig.NAME)).getLevelOfService();
 	}
 
 	@Override
@@ -116,7 +110,7 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 	private void reoptimize(double now) {
 		for (int i = pendingRequests.size() - 1; i > -1; i--) {
 			AVRequest request = pendingRequests.get(i);
-			double remainingTime = levelOfService - (now - request.getSubmissionTime());
+			double remainingTime = estimator.getTravelTimeThreshold() - (now - request.getSubmissionTime());
 			if (remainingTime > 0) {
 				AVVehicle vehicle = findClosestVehicle(request.getFromLink(), remainingTime);
 				if (vehicle != null) {
@@ -150,13 +144,11 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 	}
 
 	private AVVehicle findClosestVehicle(Link link, double remainingTime) {
-		Coord coord = link.getCoord();
 		AVVehicle closestVehicle = availableVehiclesTree.size() > 0 ?
-				availableVehiclesTree.getClosest(coord.getX(), coord.getY()) : null;
+				availableVehiclesTree.getClosest(link.getCoord().getX(), link.getCoord().getY()) : null;
 		if (closestVehicle != null) {
-			double travelDistance = CoordUtils.calcEuclideanDistance(
-					coord, availableVehicleLinks.get(closestVehicle).getCoord());
-			double travelTimeVehicle = travelDistance * detourFactor / teleportSpeed;
+			double travelTimeVehicle =
+					estimator.estimateTravelTime(link, availableVehicleLinks.get(closestVehicle), 0);
 			if (travelTimeVehicle <= remainingTime) {
 				return closestVehicle;
 			}
@@ -186,11 +178,16 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 
 		@Override
 		public AVDispatcher createDispatcher(AVDispatcherConfig config) {
+			double levelOfService = ((GrowingFleetDispatcherConfig)fullConfig.getModules().get(GrowingFleetDispatcherConfig.NAME)).getLevelOfService();
+			GrowingFleetTravelTimeEstimator estimator =
+					new GrowingFleetTravelTimeEstimator(fullConfig.plansCalcRoute(), "undefined",
+							levelOfService);
+
 			return new GrowingFleetDispatcher(
 					eventsManager,
 					network,
-					new SingleRideAppender(config, router, travelTime),
-					fullConfig
+					estimator,
+					new SingleRideAppender(config, router, travelTime)
 			);
 		}
 	}
