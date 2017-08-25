@@ -4,9 +4,9 @@ import ch.ethz.matsim.av.config.AVConfig;
 import ch.ethz.matsim.av.config.AVOperatorConfig;
 import ch.ethz.matsim.av.config.AVPriceStructureConfig;
 import ch.ethz.matsim.av.data.AVOperator;
-import ch.ethz.matsim.av.framework.AVModule;
 import ch.ethz.matsim.av.schedule.AVTransitEvent;
 import ch.ethz.matsim.av.scoring.AVScoringTrip;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.framework.IVTAVModule;
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.Event;
@@ -46,7 +46,7 @@ public class AVScoringFunctionOligopoly implements SumScoringFunction.ArbitraryE
     @Override
     public void handleEvent(Event event) {
         if (event instanceof PersonDepartureEvent) {
-            if (((PersonDepartureEvent) event).getLegMode().equals(AVModule.AV_MODE)) {
+            if (((PersonDepartureEvent) event).getLegMode().equals(IVTAVModule.AV_MODE)) {
                 if (scoringTrip != null) {
                     throw new IllegalStateException();
                 }

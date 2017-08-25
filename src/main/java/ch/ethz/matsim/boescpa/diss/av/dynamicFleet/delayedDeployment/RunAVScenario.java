@@ -26,6 +26,7 @@ import ch.ethz.matsim.av.framework.AVQSimProvider;
 import ch.ethz.matsim.av.framework.AVUtils;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.dispatcher.GrowingFleetDispatcher;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.dispatcher.GrowingFleetDispatcherConfig;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.dispatcher.MultiODGrowingFleetDispatcher;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.generator.FacilityDensityGenerator;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.framework.IVTAVModule;
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorConfigGroup;
@@ -76,6 +77,8 @@ public class RunAVScenario {
 				this.bind(GrowingFleetDispatcher.Factory.class);
 				AVUtils.bindDispatcherFactory(binder(),
 						"GrowingFleet").to(GrowingFleetDispatcher.Factory.class);
+				AVUtils.bindDispatcherFactory(binder(),
+						"MultiODGrowingFleet").to(MultiODGrowingFleetDispatcher.Factory.class);
 				AVUtils.bindGeneratorFactory(binder(),
 						"FacilityDensity").to(FacilityDensityGenerator.Factory.class);
 			}
