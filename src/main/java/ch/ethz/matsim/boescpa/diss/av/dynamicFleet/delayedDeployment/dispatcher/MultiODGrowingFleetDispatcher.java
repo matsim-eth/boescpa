@@ -70,6 +70,8 @@ public class MultiODGrowingFleetDispatcher implements AVDispatcher {
 	final private QuadTree<AVVehicle> availableVehiclesTree;
 	final private Map<AVVehicle, Link> availableVehicleLinks = new HashMap<>();
 
+	private boolean changesHappened = false;
+
 	public MultiODGrowingFleetDispatcher(EventsManager eventsManager, Network network, AggregateRideAppender appender,
 										 TravelTimeEstimator estimator) {
 		this.eventsManager = eventsManager;
@@ -92,6 +94,7 @@ public class MultiODGrowingFleetDispatcher implements AVDispatcher {
 	@Override
 	public void onRequestSubmitted(AVRequest request) {
 		pendingRequests.add(request);
+		changesHappened = true;
 	}
 
 	@Override
@@ -101,6 +104,7 @@ public class MultiODGrowingFleetDispatcher implements AVDispatcher {
 			Link link = ((AVStayTask) task).getLink();
 			availableVehiclesTree.put(link.getCoord().getX(), link.getCoord().getY(), vehicle);
 			availableVehicleLinks.put(vehicle, link);
+			changesHappened = true;
 		}
 	}
 
@@ -111,28 +115,39 @@ public class MultiODGrowingFleetDispatcher implements AVDispatcher {
 	}
 
 	private void reoptimize(double now) {
-		// first build aggregates of all pending requests
-		List<AggregatedRequest> assignableRequests = aggregatePendingRequests();
-		// then try to assign the aggregates
-		for (AggregatedRequest request : assignableRequests) {
-			double remainingTime = estimator.getTravelTimeThreshold()
-					- (now - request.getMasterRequest().getSubmissionTime());
-			if (remainingTime > 0) {
-				AVVehicle vehicle = findClosestVehicle(request.getMasterRequest().getFromLink(), remainingTime);
-				if (vehicle != null) {
-					// We have a vehicle and it's getting on the way.
-					removeVehicle(vehicle);
-					appendAggregatedRequest(now, request, vehicle);
-				} // Else, there is currently no suitable vehicle available and we try again onNextTimestep;
-			} else {
-				// We never found a suitable vehicle within the expected level of service,
-				// therefore we create a new one.
-				AVVehicle vehicle = getNewVehicle(request.getMasterRequest().getFromLink(), now);
-				appendAggregatedRequest(now, request, vehicle);
+		if (changesHappened) {
+			// first build aggregates of all pending requests
+			List<AggregatedRequest> assignableRequests = aggregatePendingRequests();
+			// then try to assign the aggregates
+			for (AggregatedRequest request : assignableRequests) {
+				double remainingTime = estimator.getTravelTimeThreshold()
+						- (now - request.getMasterRequest().getSubmissionTime());
+				if (remainingTime > 0) {
+					AVVehicle vehicle = findClosestVehicle(request.getMasterRequest().getFromLink(), remainingTime);
+					if (vehicle != null) {
+						// We have a vehicle and it's getting on the way.
+						removeVehicle(vehicle);
+						appendAggregatedRequest(now, request, vehicle);
+					} // Else, there is currently no suitable vehicle available and we try again onNextTimestep;
+				}
+			}
+			// any aggregate that was not assigned is dropped and new aggregates are created of the remaining
+			// and any new requests in the next iteration of reoptimize().
+		}
+		// we check all remaining requests for their remaining time and if one of them has none left,
+		// we create a new vehicle for this request
+		for (int i = pendingRequests.size() - 1; i > -1; i--) {
+			AVRequest request = pendingRequests.get(i);
+			double remainingTime = estimator.getTravelTimeThreshold() - (now - request.getSubmissionTime());
+			// We never found a suitable vehicle within the expected level of service,
+			// therefore we create a new one.
+			if (remainingTime <= 0) {
+				AVVehicle vehicle = getNewVehicle(request.getFromLink(), now);
+				AggregatedRequest aggregatedRequest = new AggregatedRequest(request, estimator);
+				appendAggregatedRequest(now, aggregatedRequest, vehicle);
 			}
 		}
-		// any aggregate that was not assigned is dropped and new aggregates are created of the remaining
-		// and any new requests in the next iteration of reoptimize().
+		changesHappened = false;
 	}
 
 	private void appendAggregatedRequest(double now, AggregatedRequest request, AVVehicle vehicle) {

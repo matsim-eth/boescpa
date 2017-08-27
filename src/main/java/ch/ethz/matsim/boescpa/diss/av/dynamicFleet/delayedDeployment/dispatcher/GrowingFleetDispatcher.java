@@ -68,6 +68,8 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 	final private QuadTree<AVVehicle> availableVehiclesTree;
 	final private Map<AVVehicle, Link> availableVehicleLinks = new HashMap<>();
 
+	private boolean changesHappened = false;
+
 	public GrowingFleetDispatcher(EventsManager eventsManager, Network network, TravelTimeEstimator estimator,
 								  SingleRideAppender appender) {
 		this.appender = appender;
@@ -89,6 +91,7 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 	@Override
 	public void onRequestSubmitted(AVRequest request) {
 		pendingRequests.add(request);
+		changesHappened = true;
 	}
 
 	@Override
@@ -98,6 +101,7 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 			Link link = ((AVStayTask) task).getLink();
 			availableVehiclesTree.put(link.getCoord().getX(), link.getCoord().getY(), vehicle);
 			availableVehicleLinks.put(vehicle, link);
+			changesHappened = true;
 		}
 	}
 
@@ -112,13 +116,15 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 			AVRequest request = pendingRequests.get(i);
 			double remainingTime = estimator.getTravelTimeThreshold() - (now - request.getSubmissionTime());
 			if (remainingTime > 0) {
-				AVVehicle vehicle = findClosestVehicle(request.getFromLink(), remainingTime);
-				if (vehicle != null) {
-					// We have a vehicle and it's getting on the way.
-					pendingRequests.remove(request);
-					removeVehicle(vehicle);
-					appender.schedule(request, vehicle, now);
-				} // Else, there is currently no suitable vehicle available and we try again onNextTimestep;
+				if (changesHappened) {
+					AVVehicle vehicle = findClosestVehicle(request.getFromLink(), remainingTime);
+					if (vehicle != null) {
+						// We have a vehicle and it's getting on the way.
+						pendingRequests.remove(request);
+						removeVehicle(vehicle);
+						appender.schedule(request, vehicle, now);
+					} // Else, there is currently no suitable vehicle available and we try again onNextTimestep;
+				}
 			} else {
 				// We never found a suitable vehicle within the expected level of service,
 				// therefore we create a new one.
@@ -127,6 +133,7 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 				appender.schedule(request, vehicle, now);
 			}
 		}
+		changesHappened = false;
 	}
 
 	private AVVehicle getNewVehicle(Link fromLink, double now) {
