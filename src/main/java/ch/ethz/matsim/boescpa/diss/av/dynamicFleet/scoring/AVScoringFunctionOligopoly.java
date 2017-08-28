@@ -1,4 +1,4 @@
-package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.oligopoly;
+package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.scoring;
 
 import ch.ethz.matsim.av.config.AVConfig;
 import ch.ethz.matsim.av.config.AVOperatorConfig;

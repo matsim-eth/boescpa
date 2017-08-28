@@ -19,7 +19,6 @@ import ch.ethz.matsim.av.routing.AVRoute;
 import ch.ethz.matsim.av.routing.AVRouteFactory;
 import ch.ethz.matsim.av.routing.AVRoutingModule;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.scoring.IVTAVScoringFunctionFactory;
-import ch.ethz.matsim.boescpa.diss.baseline.scoring.IVTBaselineScoringFunctionFactory;
 import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;

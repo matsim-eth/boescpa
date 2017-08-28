@@ -74,7 +74,11 @@ public class IVTAVScoringFunctionFactory implements ScoringFunctionFactory {
 
 		// legs
 		scoringFunctionAccumulator.addScoringFunction(new CharyparNagelLegScoring(params, scenario.getNetwork()));
-		scoringFunctionAccumulator.addScoringFunction(new AVScoringFunction(avConfig, person, planCalcScoreConfig.getMarginalUtilityOfMoney(), params.modeParams.get(IVTAVModule.AV_MODE).marginalUtilityOfTraveling_s));
+		if (personHouseholdMapping.getHousehold(person.getId()) != null) {
+			scoringFunctionAccumulator.addScoringFunction(new AVScoringFunctionOligopoly(avConfig, person, planCalcScoreConfig.getMarginalUtilityOfMoney(), params.modeParams.get(IVTAVModule.AV_MODE).marginalUtilityOfTraveling_s, Math.pow(personHouseholdMapping.getHousehold(person.getId()).getIncome().getIncome() / referenceIncome, votElasticity)));
+		} else {
+			scoringFunctionAccumulator.addScoringFunction(new AVScoringFunction(avConfig, person, planCalcScoreConfig.getMarginalUtilityOfMoney(), params.modeParams.get(IVTAVModule.AV_MODE).marginalUtilityOfTraveling_s));
+		}
 
 		// other standard stuff
 		scoringFunctionAccumulator.addScoringFunction(new CharyparNagelMoneyScoring(params));
