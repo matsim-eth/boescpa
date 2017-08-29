@@ -43,12 +43,8 @@ import org.matsim.core.config.Config;
 import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.router.util.TravelTime;
 import org.matsim.core.utils.collections.QuadTree;
-import org.matsim.core.utils.geometry.CoordUtils;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * WHAT IS IT FOR?
@@ -65,6 +61,7 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 	final private List<AVRequest> pendingRequests = new LinkedList<>();
 
 	final private QuadTree<AVVehicle> poolVehiclesTree;
+	final private Map<AVVehicle, Link> poolVehicleLinks = new HashMap<>();
 	final private QuadTree<AVVehicle> availableVehiclesTree;
 	final private Map<AVVehicle, Link> availableVehicleLinks = new HashMap<>();
 
@@ -86,6 +83,7 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 	public void addVehicle(AVVehicle vehicle) {
 		Link link = vehicle.getStartLink();
 		poolVehiclesTree.put(link.getCoord().getX(), link.getCoord().getY(), vehicle);
+		poolVehicleLinks.put(vehicle, link);
 	}
 
 	@Override
@@ -112,15 +110,15 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 	}
 
 	private void reoptimize(double now) {
-		for (int i = pendingRequests.size() - 1; i > -1; i--) {
-			AVRequest request = pendingRequests.get(i);
+		Set<AVRequest> handledRequests = new HashSet<>();
+		for (AVRequest request : pendingRequests) {
 			double remainingTime = estimator.getTravelTimeThreshold() - (now - request.getSubmissionTime());
 			if (remainingTime > 0) {
 				if (changesHappened) {
 					AVVehicle vehicle = findClosestVehicle(request.getFromLink(), remainingTime);
 					if (vehicle != null) {
 						// We have a vehicle and it's getting on the way.
-						pendingRequests.remove(request);
+						handledRequests.add(request);
 						removeVehicle(vehicle);
 						appender.schedule(request, vehicle, now);
 					} // Else, there is currently no suitable vehicle available and we try again onNextTimestep;
@@ -129,10 +127,11 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 				// We never found a suitable vehicle within the expected level of service,
 				// therefore we create a new one.
 				AVVehicle vehicle = getNewVehicle(request.getFromLink(), now);
-				pendingRequests.remove(request);
+				handledRequests.add(request);
 				appender.schedule(request, vehicle, now);
 			}
 		}
+		pendingRequests.removeAll(handledRequests);
 		changesHappened = false;
 	}
 
@@ -140,6 +139,8 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 		Coord coord = fromLink.getCoord();
 		if (poolVehiclesTree.size() > 0) {
 			AVVehicle poolVehicle = poolVehiclesTree.getClosest(coord.getX(), coord.getY());
+			Coord vehicleCoord = poolVehicleLinks.remove(poolVehicle).getCoord();
+			poolVehiclesTree.remove(vehicleCoord.getX(), vehicleCoord.getY(), poolVehicle);
 			eventsManager.processEvent(new AVVehicleAssignmentEvent(poolVehicle, now));
 			return poolVehicle;
 		} else {

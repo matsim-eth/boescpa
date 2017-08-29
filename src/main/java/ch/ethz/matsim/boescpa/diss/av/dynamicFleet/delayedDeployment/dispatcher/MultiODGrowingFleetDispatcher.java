@@ -67,6 +67,7 @@ public class MultiODGrowingFleetDispatcher implements AVDispatcher {
 	final private List<AVRequest> pendingRequests = new LinkedList<>();
 
 	final private QuadTree<AVVehicle> poolVehiclesTree;
+	final private Map<AVVehicle, Link> poolVehicleLinks = new HashMap<>();
 	final private QuadTree<AVVehicle> availableVehiclesTree;
 	final private Map<AVVehicle, Link> availableVehicleLinks = new HashMap<>();
 
@@ -88,7 +89,7 @@ public class MultiODGrowingFleetDispatcher implements AVDispatcher {
 	public void addVehicle(AVVehicle vehicle) {
 		Link link = vehicle.getStartLink();
 		poolVehiclesTree.put(link.getCoord().getX(), link.getCoord().getY(), vehicle);
-		eventsManager.processEvent(new AVVehicleAssignmentEvent(vehicle, 0));
+		poolVehicleLinks.put(vehicle, link);
 	}
 
 	@Override
@@ -205,6 +206,8 @@ public class MultiODGrowingFleetDispatcher implements AVDispatcher {
 		Coord coord = fromLink.getCoord();
 		if (poolVehiclesTree.size() > 0) {
 			AVVehicle poolVehicle = poolVehiclesTree.getClosest(coord.getX(), coord.getY());
+			Coord vehicleCoord = poolVehicleLinks.remove(poolVehicle).getCoord();
+			poolVehiclesTree.remove(vehicleCoord.getX(), vehicleCoord.getY(), poolVehicle);
 			eventsManager.processEvent(new AVVehicleAssignmentEvent(poolVehicle, now));
 			return poolVehicle;
 		} else {
