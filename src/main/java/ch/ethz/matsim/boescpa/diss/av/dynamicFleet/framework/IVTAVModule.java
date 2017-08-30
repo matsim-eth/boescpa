@@ -198,6 +198,8 @@ public class IVTAVModule extends AbstractModule {
 
     @Provides @Singleton
     public IVTAVScoringFunctionFactory provideIVTAVScoringFunctionFactory(Scenario scenario, AVConfig avConfig) {
-        return new IVTAVScoringFunctionFactory(scenario, new StageActivityTypesImpl(PtConstants.TRANSIT_ACTIVITY_TYPE), avConfig);
+        return new IVTAVScoringFunctionFactory(scenario,
+                new StageActivityTypesImpl("empty", PtConstants.TRANSIT_ACTIVITY_TYPE),
+                avConfig);
     }
 }
