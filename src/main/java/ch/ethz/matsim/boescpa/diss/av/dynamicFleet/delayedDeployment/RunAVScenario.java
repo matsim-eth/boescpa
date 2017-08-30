@@ -24,6 +24,7 @@ package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment;
 import ch.ethz.matsim.av.framework.AVConfigGroup;
 import ch.ethz.matsim.av.framework.AVQSimProvider;
 import ch.ethz.matsim.av.framework.AVUtils;
+import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.analysis.FleetSizeTracker;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.dispatcher.GrowingFleetDispatcher;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.dispatcher.GrowingFleetDispatcherConfig;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.dispatcher.MultiODGrowingFleetDispatcher;
@@ -81,6 +82,7 @@ public class RunAVScenario {
 						"MultiODGrowingFleet").to(MultiODGrowingFleetDispatcher.Factory.class);
 				AVUtils.bindGeneratorFactory(binder(),
 						"FacilityDensity").to(FacilityDensityGenerator.Factory.class);
+				this.addControlerListenerBinding().to(FleetSizeTracker.class);
 			}
 		});
 
