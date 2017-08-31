@@ -21,7 +21,6 @@
 
 package ch.ethz.matsim.boescpa.diss.simulations.runSetupCreation;
 
-import ch.ethz.matsim.av.framework.AVConfigGroup;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.ConfigWriter;
@@ -90,7 +89,7 @@ public class NoAVSetupCreator {
 									+ "java -Xmx20g -server -cp ../boescpa-0.1.0/boescpa-0.1.0.jar ";
 							eulerCommands += "ch.ethz.matsim.boescpa.diss.simulations.RunSimulation ";
 							eulerCommands += tempConfig.getFirst()
-										+ " ../scenario/siedlungsraum_zug_shp/siedlungsraum_zug.shp";
+										+ " ../../resources/siedlungsraum_zug_shp/siedlungsraum_zug.shp";
 						}
 					}
 				}
@@ -121,10 +120,9 @@ public class NoAVSetupCreator {
 		config.planCalcScore().getModes().get("car").setMarginalUtilityOfTraveling(votMIT);
 		// add empty rides
 		if (!emptyRides.equals("0.0")) {
-			config.plans().setInputFile(
-					"&INBASE;population_" + emptyRides + "emptyTripsPerAgent.xml.gz");
-			config.plans().setInputPersonAttributeFile(
-					"&INBASE;population_" + emptyRides + "emptyTripsPerAgent_attributes.xml.gz");
+			String inbase = config.plans().getInputFile().substring(0,config.plans().getInputFile().lastIndexOf(".xml"));
+			config.plans().setInputFile(inbase + "_" + emptyRides + "emptyTripsPerAgent.xml.gz");
+			config.plans().setInputPersonAttributeFile(inbase + "_attributes_" + emptyRides + "emptyTripsPerAgent.xml.gz");
 		}
 		// other customizations for each run
 		String runString = getNameString(aPTprice, aMITprice, votMITName, emptyRides);

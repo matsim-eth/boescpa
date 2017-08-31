@@ -48,6 +48,7 @@ public class AddEmptyRidesToPop {
 
 		String pathToOutputPopulation = pathToInputPopulation.substring(0, pathToInputPopulation.indexOf(".xml")) + "_" + args[2] + "emptyTripsPerAgent.xml.gz";
 		String pathToInputAttributes = pathToInputPopulation.substring(0, pathToInputPopulation.indexOf(".xml")) + "_attributes.xml.gz";
+		String pathToOutputAttributes = pathToInputPopulation.substring(0, pathToInputPopulation.indexOf(".xml")) + "_attributes_" + args[2] + "emptyTripsPerAgent.xml.gz";
 
 		Random random = new Random(1234);
 		for (int i = 0; i < 1000; i++) random.nextDouble();
@@ -86,7 +87,7 @@ public class AddEmptyRidesToPop {
 		PopulationWriter writer = new PopulationWriter(population);
 		writer.write(pathToOutputPopulation);
 		ObjectAttributesXmlWriter attributesWriter = new ObjectAttributesXmlWriter(population.getPersonAttributes());
-		attributesWriter.writeFile(pathToOutputPopulation.substring(0, pathToOutputPopulation.indexOf(".xml")) + "_attributes.xml.gz");
+		attributesWriter.writeFile(pathToOutputAttributes);
 	}
 
 	private static Person createNewEmptyTrip(PopulationFactory factory, Activity lastAct, Leg leg, Activity nextAct,
