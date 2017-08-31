@@ -16,6 +16,7 @@ public class IVTBaselineScoringModule extends AbstractModule {
 
     @Provides @Singleton
     public IVTBaselineScoringFunctionFactory provideIVTBaselineScoringFunctionFactory(Scenario scenario) {
-        return new IVTBaselineScoringFunctionFactory(scenario, new StageActivityTypesImpl(PtConstants.TRANSIT_ACTIVITY_TYPE));
+        return new IVTBaselineScoringFunctionFactory(scenario,
+                new StageActivityTypesImpl("empty", PtConstants.TRANSIT_ACTIVITY_TYPE));
     }
 }
