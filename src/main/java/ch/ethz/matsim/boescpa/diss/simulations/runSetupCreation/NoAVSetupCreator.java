@@ -86,7 +86,7 @@ public class NoAVSetupCreator {
 							eulerCommands += "\n" + "bsub -n 8 -W ";
 							eulerCommands += "24:00 ";
 							eulerCommands += "-R \"rusage[mem=2560]\" "
-									+ "java -Xmx20g -server -cp ../boescpa-0.1.0/boescpa-0.1.0.jar ";
+									+ "java -Xmx20g -server -cp ../../resources/boescpa-0.1.0/boescpa-0.1.0.jar ";
 							eulerCommands += "ch.ethz.matsim.boescpa.diss.simulations.RunSimulation ";
 							eulerCommands += tempConfig.getFirst()
 										+ " ../../resources/siedlungsraum_zug_shp/siedlungsraum_zug.shp";
