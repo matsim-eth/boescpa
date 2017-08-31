@@ -23,8 +23,10 @@ package ch.ethz.matsim.boescpa.diss.simulations;
 
 import ch.ethz.matsim.boescpa.lib.tools.utils.FacilityUtils;
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.*;
 import org.matsim.core.population.io.PopulationWriter;
+import org.matsim.core.utils.collections.Tuple;
 import org.matsim.facilities.ActivityFacilities;
 import org.matsim.utils.objectattributes.ObjectAttributesXmlReader;
 import org.matsim.utils.objectattributes.ObjectAttributesXmlWriter;
@@ -60,19 +62,26 @@ public class AddEmptyRidesToPop {
 		long numberOfEmptyTrips = Math.round(population.getPersons().size() * numberOfEmptyTripsPerAgentInPop);
 		Set<Person> newEmptTrips = new HashSet<>();
 		while(true) {
+			Tuple<Id<Link>, Id<Link>> locations = null;
 			for (Person person : population.getPersons().values()) {
 				Activity lastAct = null;
-				Leg lastLeg = null;
 				for (PlanElement element : person.getSelectedPlan().getPlanElements()) {
 					if (element instanceof Activity && lastAct != null && random.nextDouble() < PROB_TRIP) {
-						newEmptTrips.add(
-								createNewEmptyTrip(population.getFactory(), lastAct, lastLeg, (Activity)element,
-										newEmptTrips.size(), facilities));
-						if (newEmptTrips.size() >= numberOfEmptyTrips) break;
+						if (locations == null) {
+							locations = new Tuple<>(
+									facilities.getFacilities().get(lastAct.getFacilityId()).getLinkId(),
+									facilities.getFacilities().get(((Activity)element).getFacilityId()).getLinkId());
+						} else {
+							Tuple<Double, Double> travelTimes =
+									new Tuple<>(lastAct.getEndTime(), ((Activity)element).getStartTime());
+							newEmptTrips.add(createNewEmptyTrip(population.getFactory(), locations, travelTimes,
+											newEmptTrips.size()));
+							locations = null;
+							if (newEmptTrips.size() >= numberOfEmptyTrips) break;
+						}
 					}
 					if (newEmptTrips.size() >= numberOfEmptyTrips) break;
 					if (element instanceof Activity) lastAct = (Activity)element;
-					if (element instanceof Leg) lastLeg = (Leg)element;
 				}
 				if (newEmptTrips.size() >= numberOfEmptyTrips) break;
 			}
@@ -90,23 +99,22 @@ public class AddEmptyRidesToPop {
 		attributesWriter.writeFile(pathToOutputAttributes);
 	}
 
-	private static Person createNewEmptyTrip(PopulationFactory factory, Activity lastAct, Leg leg, Activity nextAct,
-											 int number, ActivityFacilities facilities) {
+	private static Person createNewEmptyTrip(PopulationFactory factory, Tuple<Id<Link>, Id<Link>> locations,
+											 Tuple<Double, Double> travelTimes, int number) {
+		// new empty trip
 		Person emptyTrip = factory.createPerson(Id.createPersonId("empty_trip_" + number));
 		Plan plan = factory.createPlan();
 		emptyTrip.addPlan(plan);
 		// startActivity
-		Activity startActivity = factory.createActivityFromLinkId("empty",
-				facilities.getFacilities().get(lastAct.getFacilityId()).getLinkId());
-		startActivity.setEndTime(lastAct.getEndTime());
+		Activity startActivity = factory.createActivityFromLinkId("empty", locations.getFirst());
+		startActivity.setEndTime(travelTimes.getFirst());
 		plan.addActivity(startActivity);
 		// leg
 		Leg newLeg = factory.createLeg("car");
 		plan.addLeg(newLeg);
 		// endActivity
-		Activity endActivity = factory.createActivityFromLinkId("empty",
-				facilities.getFacilities().get(nextAct.getFacilityId()).getLinkId());
-		endActivity.setStartTime(nextAct.getStartTime());
+		Activity endActivity = factory.createActivityFromLinkId("empty", locations.getSecond());
+		endActivity.setStartTime(travelTimes.getSecond());
 		plan.addActivity(endActivity);
 		return emptyTrip;
 	}
