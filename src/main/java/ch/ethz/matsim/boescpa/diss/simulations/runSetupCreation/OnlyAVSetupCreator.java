@@ -49,18 +49,18 @@ public class OnlyAVSetupCreator {
 			"aTaxi-0.43-0.00",
 			"aTaxi-0.50-0.00",
 			"aTaxi-1.00-0.00",
-			"aTaxi-0.43-1.00",
-			"aTaxi-0.50-1.00",
-			"aTaxi-1.00-1.00",
+			"aTaxi-0.43-1.50",
+			"aTaxi-0.50-1.50",
+			"aTaxi-1.00-1.50",
 	};
 
 	final static String[] aRSConfigFileNames = new String[]{
 			"aRS-0.31-0.00",
 			"aRS-0.50-0.00",
 			"aRS-1.00-0.00",
-			"aRS-0.31-1.00",
-			"aRS-0.50-1.00",
-			"aRS-1.00-1.00",
+			"aRS-0.31-1.50",
+			"aRS-0.50-1.50",
+			"aRS-1.00-1.50",
 	};
 
 	public OnlyAVSetupCreator(String inputAVConfigPath, String outputPath) {
