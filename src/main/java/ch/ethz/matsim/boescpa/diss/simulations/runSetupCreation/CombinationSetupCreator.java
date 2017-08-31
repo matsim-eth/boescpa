@@ -90,21 +90,21 @@ public class CombinationSetupCreator {
 	private List<Tuple<String, Config>> createNonAVConfigs(double avVot, double avLevelOfService, String avConfig) {
 		Map<String, PlanCalcScoreConfigGroup.ModeParams> modeParams =
 				ConfigUtils.loadConfig(inputAVConfigPath).planCalcScore().getModes();
-		List<Tuple<String, Config>> tempConfigs = null;
+		List<Tuple<String, Config>> tempConfigs = new LinkedList<>();
 		for (double aPTprice : new double[]{0.50, 0.00}) {
 			for (double aMITprice : new double[]{1.00}) {
 				for (String emptyRides : new String[]{"0.0", "0.5", "1.5"}) {
 					for (String votMIT : new String[]{"car", "pt_plus"}) {
 						switch (votMIT) {
 							case "car":
-								tempConfigs = createNewConfigs(aPTprice, aMITprice, emptyRides,
+								tempConfigs.addAll(createNewConfigs(aPTprice, aMITprice, emptyRides,
 										modeParams.get("car").getMarginalUtilityOfTraveling(), votMIT,
-										avVot, avLevelOfService, avConfig);
+										avVot, avLevelOfService, avConfig));
 								break;
 							case "pt_plus":
-								tempConfigs = createNewConfigs(aPTprice, aMITprice, emptyRides,
+								tempConfigs.addAll(createNewConfigs(aPTprice, aMITprice, emptyRides,
 										modeParams.get("pt").getMarginalUtilityOfTraveling()*0.75, votMIT,
-										avVot, avLevelOfService, avConfig);
+										avVot, avLevelOfService, avConfig));
 								break;
 						}
 					}
@@ -120,10 +120,10 @@ public class CombinationSetupCreator {
 		eulerCommands += "\n" + "bsub -n 8 -W ";
 		eulerCommands += "24:00 ";
 		eulerCommands += "-R \"rusage[mem=2560]\" "
-				+ "java -Xmx20g -server -cp ../boescpa-0.1.0/boescpa-0.1.0.jar ";
-		eulerCommands += "ch.ethz.matsim.boescpa.diss.simulations.RunSimulation ";
+				+ "java -Xmx20g -server -cp ../../resources/boescpa-0.1.0/boescpa-0.1.0.jar ";
+		eulerCommands += "ch.ethz.matsim.boescpa.diss.simulations.RunSimulationAV ";
 		eulerCommands += tempConfig.getFirst()
-					+ " ../scenario/siedlungsraum_zug_shp/siedlungsraum_zug.shp";
+					+ " ../../resources/siedlungsraum_zug_shp/siedlungsraum_zug.shp";
 	}
 
 	private void writeShell() {
@@ -154,15 +154,14 @@ public class CombinationSetupCreator {
 				.put("levelOfService", String.valueOf(avLevelOfService));
 		// create AV-stuff
 		AVConfigGroup avConfigGroup = new AVConfigGroup();
-		avConfigGroup.setConfigPath("../scenario/av_configs/" + avConfig + ".xml");
+		avConfigGroup.setConfigPath("../../resources/configs/" + avConfig + ".xml");
 		avConfigGroup.setParallelRouters(8L);
 		config.addModule(avConfigGroup);
 		// add empty rides
 		if (!emptyRides.equals("0.0")) {
-			config.plans().setInputFile(
-					"&INBASE;population_" + emptyRides + "emptyTripsPerAgent.xml.gz");
-			config.plans().setInputPersonAttributeFile(
-					"&INBASE;population_" + emptyRides + "emptyTripsPerAgent_attributes.xml.gz");
+			String inbase = config.plans().getInputFile().substring(0,config.plans().getInputFile().lastIndexOf(".xml"));
+			config.plans().setInputFile(inbase + "_" + emptyRides + "emptyTripsPerAgent.xml.gz");
+			config.plans().setInputPersonAttributeFile(inbase + "_attributes_" + emptyRides + "emptyTripsPerAgent.xml.gz");
 		}
 		// other customizations for each run
 		String runString = getNameString(aPTprice, aMITprice, votMITName, emptyRides) + "-"
