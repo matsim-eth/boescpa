@@ -55,10 +55,10 @@ public class OnlyAVSetupCreator {
 	};
 
 	final static String[] aRSConfigFileNames = new String[]{
-			"aRS-0.43-0.00",
+			"aRS-0.31-0.00",
 			"aRS-0.50-0.00",
 			"aRS-1.00-0.00",
-			"aRS-0.43-1.00",
+			"aRS-0.31-1.00",
 			"aRS-0.50-1.00",
 			"aRS-1.00-1.00",
 	};
@@ -105,10 +105,10 @@ public class OnlyAVSetupCreator {
 		eulerCommands += "\n" + "bsub -n 8 -W ";
 		eulerCommands += "24:00 ";
 		eulerCommands += "-R \"rusage[mem=2560]\" "
-				+ "java -Xmx20g -server -cp ../boescpa-0.1.0/boescpa-0.1.0.jar ";
+				+ "java -Xmx20g -server -cp ../../resources/boescpa-0.1.0/boescpa-0.1.0.jar ";
 		eulerCommands += "ch.ethz.matsim.boescpa.diss.simulations.RunSimulationAV ";
 		eulerCommands += tempConfig.getFirst()
-					+ " ../scenario/siedlungsraum_zug_shp/siedlungsraum_zug.shp";
+					+ " ../../resources/siedlungsraum_zug_shp/siedlungsraum_zug.shp";
 	}
 
 	private void writeShell() {
@@ -131,7 +131,7 @@ public class OnlyAVSetupCreator {
 				.put("levelOfService", String.valueOf(levelOfService));
 		// create AV-stuff
 		AVConfigGroup avConfigGroup = new AVConfigGroup();
-		avConfigGroup.setConfigPath("../scenario/av_configs/" + avConfig + ".xml");
+		avConfigGroup.setConfigPath("../../resources/configs/" + avConfig + ".xml");
 		avConfigGroup.setParallelRouters(8L);
 		config.addModule(avConfigGroup);
 
@@ -145,6 +145,6 @@ public class OnlyAVSetupCreator {
 	}
 
 	public static String getNameString(double vot, double levelOfService, String avConfig) {
-		return avConfig + "-" + vot + "-" + levelOfService;
+		return avConfig + vot + "-" + levelOfService;
 	}
 }
