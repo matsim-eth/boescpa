@@ -84,7 +84,7 @@ public class NoAVSetupCreator {
 							new ConfigWriter(tempConfig.getSecond()).write(
 									outputPath + tempConfig.getFirst());
 							eulerCommands += "\n" + "bsub -n 8 -W ";
-							eulerCommands += "24:00 ";
+							eulerCommands += "48:00 ";
 							eulerCommands += "-R \"rusage[mem=2560]\" "
 									+ "java -Xmx20g -server -cp ../../resources/boescpa-0.1.0/boescpa-0.1.0.jar ";
 							eulerCommands += "ch.ethz.matsim.boescpa.diss.simulations.RunSimulation ";
@@ -127,7 +127,7 @@ public class NoAVSetupCreator {
 		// other customizations for each run
 		String runString = getNameString(aPTprice, aMITprice, votMITName, emptyRides);
 		config.controler().setRunId(runString);
-		config.controler().setOutputDirectory("/cluster/work/ivt_vpl/pboesch/diss/nonAV/output_" + runString);
+		config.controler().setOutputDirectory("/cluster/scratch/pboesch/diss/nonAV/output_" + runString);
 		config.qsim().setTimeStepSize(5);
 		newConfigs.add(new Tuple<>("config_-_" + runString + ".xml", config));
 		return newConfigs;

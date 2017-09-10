@@ -118,7 +118,7 @@ public class CombinationSetupCreator {
 		new ConfigWriter(tempConfig.getSecond()).write(
 				outputPath + tempConfig.getFirst());
 		eulerCommands += "\n" + "bsub -n 8 -W ";
-		eulerCommands += "24:00 ";
+		eulerCommands += "48:00 ";
 		eulerCommands += "-R \"rusage[mem=2560]\" "
 				+ "java -Xmx20g -server -cp ../../resources/boescpa-0.1.0/boescpa-0.1.0.jar ";
 		eulerCommands += "ch.ethz.matsim.boescpa.diss.simulations.RunSimulationAV ";
@@ -167,7 +167,7 @@ public class CombinationSetupCreator {
 		String runString = getNameString(aPTprice, aMITprice, votMITName, emptyRides) + "-"
 				+ OnlyAVSetupCreator.getNameString(avVot, avLevelOfService, avConfig);
 		config.controler().setRunId(runString);
-		config.controler().setOutputDirectory("/cluster/work/ivt_vpl/pboesch/diss/combination/output_" + runString);
+		config.controler().setOutputDirectory("/cluster/scratch/pboesch/diss/combination/output_" + runString);
 		config.qsim().setTimeStepSize(5);
 		newConfigs.add(new Tuple<>("config_-_" + runString + ".xml", config));
 		return newConfigs;
