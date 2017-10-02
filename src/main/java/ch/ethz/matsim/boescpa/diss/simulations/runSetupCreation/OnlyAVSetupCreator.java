@@ -102,10 +102,10 @@ public class OnlyAVSetupCreator {
 	private void setEulerCommand(Tuple<String, Config> tempConfig) {
 		new ConfigWriter(tempConfig.getSecond()).write(
 				outputPath + tempConfig.getFirst());
-		eulerCommands += "\n" + "bsub -n 8 -W ";
-		eulerCommands += "48:00 ";
+		eulerCommands += "\n" + "bsub -n 10 -W ";
+		eulerCommands += "24:00 ";
 		eulerCommands += "-R \"rusage[mem=2560]\" "
-				+ "java -Xmx20g -server -cp ../../resources/boescpa-0.1.0/boescpa-0.1.0.jar ";
+				+ "java -Xmx25g -server -cp ../../resources/boescpa-0.1.0/boescpa-0.1.0.jar ";
 		eulerCommands += "ch.ethz.matsim.boescpa.diss.simulations.RunSimulationAV ";
 		eulerCommands += tempConfig.getFirst()
 					+ " ../../resources/siedlungsraum_zug_shp/siedlungsraum_zug.shp";
