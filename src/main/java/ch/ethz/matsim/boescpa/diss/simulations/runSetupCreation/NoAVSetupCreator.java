@@ -83,10 +83,10 @@ public class NoAVSetupCreator {
 						for (Tuple<String, Config> tempConfig : tempConfigs) {
 							new ConfigWriter(tempConfig.getSecond()).write(
 									outputPath + tempConfig.getFirst());
-							eulerCommands += "\n" + "bsub -n 10 -W ";
+							eulerCommands += "\n" + "bsub -n 16 -W ";
 							eulerCommands += "24:00 ";
-							eulerCommands += "-R \"rusage[mem=2560]\" "
-									+ "java -Xmx25g -server -cp ../../resources/boescpa-0.1.0/boescpa-0.1.0.jar ";
+							eulerCommands += "-R \"rusage[mem=2048]\" "
+									+ "java -Xmx32g -server -cp ../../resources/boescpa-0.1.0/boescpa-0.1.0.jar ";
 							eulerCommands += "ch.ethz.matsim.boescpa.diss.simulations.RunSimulation ";
 							eulerCommands += tempConfig.getFirst()
 										+ " ../../resources/siedlungsraum_zug_shp/siedlungsraum_zug.shp";
