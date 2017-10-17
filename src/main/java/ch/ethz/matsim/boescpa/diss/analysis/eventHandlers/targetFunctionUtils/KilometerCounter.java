@@ -196,7 +196,7 @@ public class KilometerCounter implements LinkLeaveEventHandler, PersonEntersVehi
 	private String pathVehicleKmPNG;
 	private String pathPassengerKmPNG;
 	private String pathPasssengerAnzPNG;
-	private List<String> modesOutputet;
+	private List<String> modesOutput;
 
 	public void prepareForInSimResults(String outputFilePath, double countsScaleFactor) {
 		this.countsScaleFactor = countsScaleFactor;
@@ -223,13 +223,13 @@ public class KilometerCounter implements LinkLeaveEventHandler, PersonEntersVehi
 		//	Reason for it.10: Assumption that by this time every vehicle type is used at least once...
 		if (this.iteration > 9) {
 			try {
-				// headers and setup in 10th iteration:
-				if (this.iteration == 10) {
-					this.modesOutputet = new ArrayList<>();
+				// headers and setup in 10th iteration (or any later iteration, e.g. if restarts):
+				if (this.modesOutput == null) {
+					this.modesOutput = new ArrayList<>();
 					String header = "it";
 					for (String vehicleType : this.vehicleKmHistory.keySet()) {
 						header += DEL + vehicleType;
-						this.modesOutputet.add(vehicleType);
+						this.modesOutput.add(vehicleType);
 					}
 					writeHistorySoFar(header, this.vehicleKilometersWriter, this.vehicleKmHistory);
 					writeHistorySoFar(header, this.passengerKilometersWriter, this.passengerKmHistory);
@@ -253,7 +253,7 @@ public class KilometerCounter implements LinkLeaveEventHandler, PersonEntersVehi
 	private void writeOutput(BufferedWriter writer, Map<String, Map<Integer, Double>> history)
 			throws IOException{
 		writer.write(Integer.toString(this.iteration));
-		for (String mode : this.modesOutputet) {
+		for (String mode : this.modesOutput) {
 			writer.write(history.keySet().contains(mode) ?
 					DEL + history.get(mode).get(this.iteration) : DEL + Integer.toString(0));
 		}
@@ -267,7 +267,7 @@ public class KilometerCounter implements LinkLeaveEventHandler, PersonEntersVehi
 		writer.newLine();
 		for (int i = 0; i <= this.iteration; i++) {
 			writer.write(Integer.toString(i));
-			for (String mode : this.modesOutputet) {
+			for (String mode : this.modesOutput) {
 				writer.write(history.keySet().contains(mode) ?
 						DEL + history.get(mode).get(i) : DEL + Integer.toString(0));
 			}
