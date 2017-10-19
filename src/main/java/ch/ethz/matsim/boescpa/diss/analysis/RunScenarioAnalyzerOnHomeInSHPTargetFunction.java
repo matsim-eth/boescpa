@@ -23,10 +23,7 @@ package ch.ethz.matsim.boescpa.diss.analysis;
 
 import ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.ScenarioAnalyzer;
 import ch.ethz.matsim.boescpa.analysis.spatialCutters.NoCutter;
-import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.AgentCounter;
-import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.ScenarioAnalyzerEventHandlerHomeInSHP;
-import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.TargetFunctionEvaluator;
-import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.TripAnalyzer;
+import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.*;
 import ch.ethz.matsim.boescpa.lib.tools.utils.FacilityUtils;
 import ch.ethz.matsim.boescpa.lib.tools.utils.NetworkUtils;
 import ch.ethz.matsim.boescpa.lib.tools.utils.PopulationUtils;
@@ -55,7 +52,7 @@ public class RunScenarioAnalyzerOnHomeInSHPTargetFunction {
 					new AgentCounter(path2HomesSHP, population, network),
 					new TripAnalyzer(path2HomesSHP, population, network),
 					//new TripActivityCrosscorrelator(path2HomesSHP, population, network),
-					//new MFDCreator(path2HomesSHP, population, network),
+					new MFDCreator(path2HomesSHP, population, network),
 					new TargetFunctionEvaluator(path2HomesSHP, population, network, facilities)
 			};
 			ScenarioAnalyzer scenarioAnalyzer = new ScenarioAnalyzer(path2EventFile, scaleFactor, handlers);

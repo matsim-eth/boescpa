@@ -110,28 +110,46 @@ public class AccessibilitiesCalculator implements PersonDepartureEventHandler, P
 		String results = "Total accessibilities:" + NL;
 		Map<String, Map<String, Double>> totalAccessibilities = calculateAccessibilities(
 				scaleFactor, this.travelTimesPerZonePairForDifferentModes_Total);
-		results += getAccessibilityString(totalAccessibilities);
+		results += getAccessibilityString(totalAccessibilities, this.travelTimesPerZonePairForDifferentModes_Total);
 		results += NL + "Peak accessibilities:" + NL;
 		Map<String, Map<String, Double>> peakAccessibilities = calculateAccessibilities(
 				scaleFactor, this.travelTimesPerZonePairForDifferentModes_Peak);
-		results += getAccessibilityString(peakAccessibilities);
+		results += getAccessibilityString(peakAccessibilities, this.travelTimesPerZonePairForDifferentModes_Peak);
 		results += NL + "Offpeak accessibilities: " + NL;
 		Map<String, Map<String, Double>> offpeakAccessibilities = calculateAccessibilities(
 				scaleFactor, this.travelTimesPerZonePairForDifferentModes_OffPeak);
-		results += getAccessibilityString(offpeakAccessibilities);
+		results += getAccessibilityString(offpeakAccessibilities, this.travelTimesPerZonePairForDifferentModes_OffPeak);
 		return results;
 	}
 
-	private String getAccessibilityString(Map<String, Map<String, Double>> accessibilities) {
+	private String getAccessibilityString(Map<String, Map<String, Double>> accessibilities,
+										  Map<String, Map<Tuple<String, String>, List<Double>>> travelTimesPerZonePairForDifferentModes) {
 		String accessibilityString = "";
 		for (String mode : accessibilities.keySet()) {
-			double avgAccMode = accessibilities.get(mode).values().stream().mapToDouble(a -> a).filter(a -> a > 0).average().orElse(0.);
-			accessibilityString += NL + mode + DEL + df.format(avgAccMode) + NL;
+			//double avgAccMode = accessibilities.get(mode).values().stream().mapToDouble(a -> a).filter(a -> a > 0).average().orElse(0.);
+			double weightedAvgAccMode = getWeightedAvgAccMode(accessibilities.get(mode), travelTimesPerZonePairForDifferentModes.get(mode));
+			accessibilityString = accessibilityString.concat(NL + mode + DEL + df.format(weightedAvgAccMode) + NL);
 			for (String gridCell : accessibilities.get(mode).keySet()) {
-				accessibilityString += gridCell + DEL + df.format(accessibilities.get(mode).get(gridCell)) + DEL;
+				accessibilityString = accessibilityString.concat(gridCell + DEL + df.format(accessibilities.get(mode).get(gridCell)) + DEL);
 			}
 		}
 		return accessibilityString + NL;
+	}
+
+	private double getWeightedAvgAccMode(Map<String, Double> accessibilities, Map<Tuple<String, String>, List<Double>> travelTimesPerZonePair) {
+		double totalNumberOfDepartures = 0;
+		double weightedAccessibilities = 0;
+		for (String zone : accessibilities.keySet()) {
+			double zoneDepartures = 0;
+			for (Tuple<String, String> fromTo : travelTimesPerZonePair.keySet()) {
+				if (fromTo.getFirst().equals(zone)) {
+					zoneDepartures +=  travelTimesPerZonePair.get(fromTo).size();
+				}
+			}
+			totalNumberOfDepartures += zoneDepartures;
+			weightedAccessibilities += accessibilities.get(zone) * zoneDepartures;
+		}
+		return weightedAccessibilities / totalNumberOfDepartures;
 	}
 
 	private Map<String, Map<String, Double>> calculateAccessibilities(double scaleFactor,
@@ -315,11 +333,11 @@ public class AccessibilitiesCalculator implements PersonDepartureEventHandler, P
 	private String getInSimResults(Map<String, Map<String, Double>> accessibilities) {
 		String accessibilityString = "";
 		for (String mode : accessibilities.keySet()) {
-			accessibilityString += NL;
+			accessibilityString = accessibilityString.concat(NL);
 			double avgAccMode = accessibilities.get(mode).values().stream().mapToDouble(a -> a).filter(a -> a > 0).average().orElse(0.);
 			accessibilityString += this.iteration + DEL + mode + DEL + df.format(avgAccMode) + DEL;
 			for (String gridCell : accessibilities.get(mode).keySet()) {
-				accessibilityString += gridCell + DEL + df.format(accessibilities.get(mode).get(gridCell)) + DEL;
+				accessibilityString = accessibilityString.concat(gridCell + DEL + df.format(accessibilities.get(mode).get(gridCell)) + DEL);
 			}
 		}
 		return accessibilityString;
