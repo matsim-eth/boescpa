@@ -24,10 +24,9 @@ package ch.ethz.matsim.boescpa.diss.analysis;
 import org.matsim.core.utils.io.IOUtils;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.*;
 
 /**
  * WHAT IS IT FOR?
@@ -35,12 +34,13 @@ import java.util.Map;
  * @author boescpa
  */
 public class RunEvaluation {
-	private static final String SEP = ";";
+	private static final String DEL = ";";
 
 	private final String pathToRunFolders;
 	private final String simClass;
 	private final double scaleFactor;
 	private final BufferedWriter writer;
+	private final DecimalFormat df;
 
 	private RunEvaluation(String pathToRunFolders, String simClass, double scaleFactor) throws IOException {
 		this.pathToRunFolders = pathToRunFolders;
@@ -51,11 +51,15 @@ public class RunEvaluation {
 		String header = "runID"
 				+ header_simType
 				+ header_analysisResults
-				+ header_VKM;
+				+ header_VKM
+				+ header_Accessibility;
 		System.out.print(header + "\n");
 		this.writer.write(header);
 		this.writer.newLine();
 		this.writer.flush();
+
+		this.df = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+		this.df.setMaximumFractionDigits(340);
 	}
 
 	public static void main(final String[] args) throws IOException {
@@ -91,7 +95,7 @@ public class RunEvaluation {
 			output = output.concat(getSimType(runId));
 			output = output.concat(getAnalysisResults(pathToFolder, runId));
 			output = output.concat(getVKT(pathToFolder, runId));
-			//output = output.concat(getAccessibilities(pathToFolder, runId));
+			output = output.concat(getAccessibilities(pathToFolder, runId));
 			//output = output.concat(getProfitabilities(pathToFolder, runId));
 			//output = output.concat(getWelfares(pathToFolder, runId));
 			// ****************************
@@ -103,7 +107,66 @@ public class RunEvaluation {
 		}
 	}
 
-	private static final String header_VKM = SEP + "totalVKM_av" + SEP + "totalVKM_av-car" + SEP + "totalVKM_all";
+	private static final String header_Accessibility = DEL + "access_total_pt" + DEL + "access_total_av" +
+			DEL + "access_total_car" + DEL + "access_peak_pt" + DEL + "access_peak_av" + DEL + "access_peak_car" +
+			DEL + "access_offpeak_pt" + DEL + "access_offpeak_av" + DEL + "access_offpeak_car";
+
+	private String getAccessibilities(String pathToRunFolder, String runId) throws IOException {
+		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
+				+ runId + ".output_events.xml.gz_analysisResultsTargetFunction.csv");
+		for (int i = 0; i < 40; i++) reader.readLine();
+		String line = reader.readLine();
+		int numberOfValsFound = 0;
+		Map<String, String> valsFound = new HashMap<>();
+		while(numberOfValsFound < 9 || line != null) {
+			String[] lineElements = line.split("; ");
+			switch (lineElements[0]) {
+				case "pt":
+					if (numberOfValsFound < 3) {
+						valsFound.put("pt_total", lineElements[1]);
+					} else if (numberOfValsFound < 6) {
+						valsFound.put("pt_peak", lineElements[1]);
+					} else {
+						valsFound.put("pt_offpeak", lineElements[1]);
+					}
+					numberOfValsFound++;
+					break;
+				case "av":
+					if (numberOfValsFound < 3) {
+						valsFound.put("av_total", lineElements[1]);
+					} else if (numberOfValsFound < 6) {
+						valsFound.put("av_peak", lineElements[1]);
+					} else {
+						valsFound.put("av_offpeak", lineElements[1]);
+					}
+					numberOfValsFound++;
+					break;
+				case "car":
+					if (numberOfValsFound < 3) {
+						valsFound.put("car_total", lineElements[1]);
+					} else if (numberOfValsFound < 6) {
+						valsFound.put("car_peak", lineElements[1]);
+					} else {
+						valsFound.put("car_offpeak", lineElements[1]);
+					}
+					numberOfValsFound++;
+					break;
+			}
+			line = reader.readLine();
+		}
+		String output = DEL + valsFound.get("pt_total");
+		output = output + DEL + valsFound.get("av_total");
+		output = output + DEL + valsFound.get("car_total");
+		output = output + DEL + valsFound.get("pt_peak");
+		output = output + DEL + valsFound.get("av_peak");
+		output = output + DEL + valsFound.get("car_peak");
+		output = output + DEL + valsFound.get("pt_offpeak");
+		output = output + DEL + valsFound.get("av_offpeak");
+		output = output + DEL + valsFound.get("car_offpeak");
+		return output;
+	}
+
+	private static final String header_VKM = DEL + "totalVKM_av" + DEL + "totalVKM_av-car" + DEL + "totalVKM_all";
 
 	private String getVKT(String pathToRunFolder, String runId) throws IOException {
 		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
@@ -114,32 +177,37 @@ public class RunEvaluation {
 		for (String mode : evalResult.keySet()) {
 			if (mode.contains("av")) totalVKM += evalResult.get(mode);
 		}
-		output = output + SEP + String.valueOf(totalVKM*scaleFactor);
+		output = output + DEL + df.format(totalVKM*scaleFactor);
 		// total vkm car and av
 		for (String mode : evalResult.keySet()) {
 			if (mode.equals("car")) totalVKM += evalResult.get(mode);
 		}
-		output = output + SEP + String.valueOf(totalVKM*scaleFactor);
+		output = output + DEL + df.format(totalVKM*scaleFactor);
 		// total vkm
 		totalVKM = 0;
 		for (String mode : evalResult.keySet()) {
 			totalVKM += evalResult.get(mode);
 		}
-		output = output + SEP + String.valueOf(totalVKM*scaleFactor);
+		output = output + DEL + df.format(totalVKM*scaleFactor);
 		return output;
 	}
 
 	private Map<String, Double> evaluateFile(String pathToFile) throws IOException {
 		BufferedReader reader = IOUtils.getBufferedReader(pathToFile);
 		// identify modes
-		String[] header = reader.readLine().split(SEP); // header
+		String[] header = reader.readLine().split(DEL); // header
 		Map<Integer, List<Double>> zwischenresultate = new HashMap<>();
 		for (int i = 1; i < header.length; i++) {
 			zwischenresultate.put(i, new ArrayList<>());
 		}
 		String line = reader.readLine();
+		while (line != null) { // we only average the last 25 iterations
+			String[] lineVals = line.split(DEL);
+			if (lineVals[0].equals("276")) break;
+			line = reader.readLine();
+		}
 		while (line != null) {
-			String[] lineVals = line.split(SEP);
+			String[] lineVals = line.split(DEL);
 			for (int i = 1; i < header.length; i++) {
 				zwischenresultate.get(i).add(Double.parseDouble(lineVals[i]));
 			}
@@ -165,13 +233,13 @@ public class RunEvaluation {
 	}
 
 	private static final String header_analysisResults =
-			SEP + "modeShare_PT" + SEP + "modeShare_AV" + SEP + "modeShare_CAR" + SEP + "modeShare_SM" + SEP +
-					"avTravDist_PT" + SEP + "avTravDist_AV" + SEP + "avTravDist_CAR" + SEP + "avTravDist_SM" + SEP +
-					"avSpeed_PT" + SEP + "avSpeed_AV" + SEP + "avSpeed_CAR" + SEP + "avSpeed_SM";
+			DEL + "modeShare_PT" + DEL + "modeShare_AV" + DEL + "modeShare_CAR" + DEL + "modeShare_SM" + DEL +
+					"avTravDist_PT" + DEL + "avTravDist_AV" + DEL + "avTravDist_CAR" + DEL + "avTravDist_SM" + DEL +
+					"avSpeed_PT" + DEL + "avSpeed_AV" + DEL + "avSpeed_CAR" + DEL + "avSpeed_SM";
 
 	private String getAnalysisResults(String pathToRunFolder, String runId) throws IOException {
 		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
-				+ runId + ".output_events.xml.gz_analysisResults.csv");
+				+ runId + ".output_events.xml.gz_analysisResultsTargetFunction.csv");
 		for (int i = 0; i < 5; i++) reader.readLine();
 		String line = reader.readLine();
 		double totalNumberOfTrips = 0;
@@ -212,36 +280,36 @@ public class RunEvaluation {
 		String modeShares = "", travDists = "", speeds = "";
 		for (int i = 0; i < 4; i++) {
 			// mode share
-			modeShares = modeShares.concat(SEP + String.valueOf(numberOfTrips[i]/totalNumberOfTrips));
-			travDists = travDists.concat(SEP + String.valueOf(avDist[i]));
+			modeShares = modeShares.concat(DEL + df.format(numberOfTrips[i]/totalNumberOfTrips));
+			travDists = travDists.concat(DEL + df.format(avDist[i]));
 			if (avDur[i] > 0) {
-				speeds = speeds.concat(SEP + String.valueOf(avDist[i] / (avDur[i] / 60)));
+				speeds = speeds.concat(DEL + df.format(avDist[i] / (avDur[i] / 60)));
 			} else {
-				speeds = speeds.concat(SEP + "0");
+				speeds = speeds.concat(DEL + "0");
 			}
 		}
 		return modeShares + travDists + speeds;
 	}
 
-	private static final String header_simType = SEP + "simClass" + SEP +
-			"aPTprice" + SEP + "aMITprice" + SEP + "emptyRides" + SEP + "votMIT" + SEP +
-			"serviceTypeAV" + SEP + "AVprice" + SEP + "AVbaseFare" + SEP + "votAV" + SEP + "levelOfServiceAV";
+	private static final String header_simType = DEL + "simClass" + DEL +
+			"aPTprice" + DEL + "aMITprice" + DEL + "emptyRides" + DEL + "votMIT" + DEL +
+			"serviceTypeAV" + DEL + "AVprice" + DEL + "AVbaseFare" + DEL + "votAV" + DEL + "levelOfServiceAV";
 
 	private String getSimType(String runId) {
-		String output = SEP + runId.replace("-", SEP);
+		String output = DEL + runId.replace("-", DEL);
 		switch (simClass) {
 			case "combination":
-				return SEP + simClass + SEP + output;
+				return DEL + simClass + DEL + output;
 			case "nonAV":
-				return SEP + simClass + SEP + output + SEP + ";;;;;";
+				return DEL + simClass + DEL + output + DEL + ";;;;;";
 			case "oligo":
 				if (output.contains("onlyAVoligo")) {
-					return SEP + simClass + ";;;;;;;;;";
+					return DEL + simClass + ";;;;;;;;;";
 				} else {
-					return SEP + simClass + SEP + output + SEP + ";;;;;";
+					return DEL + simClass + DEL + output + DEL + ";;;;;";
 				}
 			case "onlyAV":
-				return SEP + simClass + SEP + ";;;" + output;
+				return DEL + simClass + DEL + ";;;" + output;
 			default:
 				return "";
 		}
