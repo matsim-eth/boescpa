@@ -24,6 +24,10 @@ package ch.ethz.matsim.boescpa.diss.analysis;
 import org.matsim.core.utils.io.IOUtils;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * WHAT IS IT FOR?
@@ -33,26 +37,21 @@ import java.io.*;
 public class RunEvaluation {
 	private static final String SEP = ";";
 
-	private static final String header_simType = "simClass" + SEP +
-			"aPTprice" + SEP + "aMITprice" + SEP + "emptyRides" + SEP + "votMIT" + SEP +
-					"serviceTypeAV" + SEP + "AVprice" + SEP + "AVbaseFare" + SEP + "votAV" + SEP + "levelOfServiceAV";
-	private static final String header_analysisResults =
-			"modeShare_PT" + SEP + "modeShare_AV" + SEP + "modeShare_CAR" + SEP + "modeShare_SM" + SEP +
-					"avTravDist_PT" + SEP + "avTravDist_AV" + SEP + "avTravDist_CAR" + SEP + "avTravDist_SM" + SEP +
-					"avSpeed_PT" + SEP + "avSpeed_AV" + SEP + "avSpeed_CAR" + SEP + "avSpeed_SM";
-
 	private final String pathToRunFolders;
 	private final String simClass;
+	private final double scaleFactor;
 	private final BufferedWriter writer;
 
-	private RunEvaluation(String pathToRunFolders, String simClass) throws IOException {
+	private RunEvaluation(String pathToRunFolders, String simClass, double scaleFactor) throws IOException {
 		this.pathToRunFolders = pathToRunFolders;
 		this.simClass = simClass;
+		this.scaleFactor = scaleFactor;
 		this.writer = IOUtils.getBufferedWriter(pathToRunFolders + File.separator
 				+ "results_summary.csv");
 		String header = "runID"
-				+ SEP + header_simType
-				+ SEP + header_analysisResults;
+				+ header_simType
+				+ header_analysisResults
+				+ header_VKM;
 		System.out.print(header + "\n");
 		this.writer.write(header);
 		this.writer.newLine();
@@ -62,7 +61,8 @@ public class RunEvaluation {
 	public static void main(final String[] args) throws IOException {
 		String pathToRunFolders = args[0];
 		String simClass = args[1];
-		RunEvaluation runEvaluation = new RunEvaluation(pathToRunFolders, simClass);
+		double scaleFactor = Double.parseDouble(args[2]);
+		RunEvaluation runEvaluation = new RunEvaluation(pathToRunFolders, simClass, scaleFactor);
 		runEvaluation.readFiles();
 	}
 
@@ -90,6 +90,10 @@ public class RunEvaluation {
 			String output = runId;
 			output = output.concat(getSimType(runId));
 			output = output.concat(getAnalysisResults(pathToFolder, runId));
+			output = output.concat(getVKT(pathToFolder, runId));
+			//output = output.concat(getAccessibilities(pathToFolder, runId));
+			//output = output.concat(getProfitabilities(pathToFolder, runId));
+			//output = output.concat(getWelfares(pathToFolder, runId));
 			// ****************************
 			// add more information here...
 			// ****************************
@@ -98,6 +102,72 @@ public class RunEvaluation {
 			return null;
 		}
 	}
+
+	private static final String header_VKM = SEP + "totalVKM_av" + SEP + "totalVKM_av-car" + SEP + "totalVKM_all";
+
+	private String getVKT(String pathToRunFolder, String runId) throws IOException {
+		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
+				runId + ".vehicle_km.csv");
+		String output = "";
+		// total vkm av
+		double totalVKM = 0;
+		for (String mode : evalResult.keySet()) {
+			if (mode.contains("av")) totalVKM += evalResult.get(mode);
+		}
+		output = output + SEP + String.valueOf(totalVKM*scaleFactor);
+		// total vkm car and av
+		for (String mode : evalResult.keySet()) {
+			if (mode.equals("car")) totalVKM += evalResult.get(mode);
+		}
+		output = output + SEP + String.valueOf(totalVKM*scaleFactor);
+		// total vkm
+		totalVKM = 0;
+		for (String mode : evalResult.keySet()) {
+			totalVKM += evalResult.get(mode);
+		}
+		output = output + SEP + String.valueOf(totalVKM*scaleFactor);
+		return output;
+	}
+
+	private Map<String, Double> evaluateFile(String pathToFile) throws IOException {
+		BufferedReader reader = IOUtils.getBufferedReader(pathToFile);
+		// identify modes
+		String[] header = reader.readLine().split(SEP); // header
+		Map<Integer, List<Double>> zwischenresultate = new HashMap<>();
+		for (int i = 1; i < header.length; i++) {
+			zwischenresultate.put(i, new ArrayList<>());
+		}
+		String line = reader.readLine();
+		while (line != null) {
+			String[] lineVals = line.split(SEP);
+			for (int i = 1; i < header.length; i++) {
+				zwischenresultate.get(i).add(Double.parseDouble(lineVals[i]));
+			}
+			line = reader.readLine();
+		}
+		Map<String, Double> evalResult = new HashMap<>();
+		for (int i = 1; i < header.length; i++) {
+			evalResult.put(header[i].trim(), weightedAverage(zwischenresultate.get(i)));
+		}
+		return evalResult;
+	}
+
+	private double weightedAverage(List<Double> vals) {
+		if (vals.size() == 0) return 0;
+		long i = 1, intSum = 0;
+		double valSum = 0;
+		for (double val : vals) {
+			intSum += i;
+			valSum += val*i;
+			i++;
+		}
+		return valSum/intSum;
+	}
+
+	private static final String header_analysisResults =
+			SEP + "modeShare_PT" + SEP + "modeShare_AV" + SEP + "modeShare_CAR" + SEP + "modeShare_SM" + SEP +
+					"avTravDist_PT" + SEP + "avTravDist_AV" + SEP + "avTravDist_CAR" + SEP + "avTravDist_SM" + SEP +
+					"avSpeed_PT" + SEP + "avSpeed_AV" + SEP + "avSpeed_CAR" + SEP + "avSpeed_SM";
 
 	private String getAnalysisResults(String pathToRunFolder, String runId) throws IOException {
 		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
@@ -142,16 +212,20 @@ public class RunEvaluation {
 		String modeShares = "", travDists = "", speeds = "";
 		for (int i = 0; i < 4; i++) {
 			// mode share
-			modeShares = modeShares.concat(String.valueOf(numberOfTrips[i]/totalNumberOfTrips) + SEP);
-			travDists = travDists.concat(String.valueOf(avDist[i]) + SEP);
+			modeShares = modeShares.concat(SEP + String.valueOf(numberOfTrips[i]/totalNumberOfTrips));
+			travDists = travDists.concat(SEP + String.valueOf(avDist[i]));
 			if (avDur[i] > 0) {
-				speeds = speeds.concat(String.valueOf(avDist[i] / (avDur[i] / 60)) + SEP);
+				speeds = speeds.concat(SEP + String.valueOf(avDist[i] / (avDur[i] / 60)));
 			} else {
-				speeds = speeds.concat("0" + SEP);
+				speeds = speeds.concat(SEP + "0");
 			}
 		}
-		return SEP.concat(modeShares).concat(travDists).concat(speeds);
+		return modeShares + travDists + speeds;
 	}
+
+	private static final String header_simType = SEP + "simClass" + SEP +
+			"aPTprice" + SEP + "aMITprice" + SEP + "emptyRides" + SEP + "votMIT" + SEP +
+			"serviceTypeAV" + SEP + "AVprice" + SEP + "AVbaseFare" + SEP + "votAV" + SEP + "levelOfServiceAV";
 
 	private String getSimType(String runId) {
 		String output = SEP + runId.replace("-", SEP);
