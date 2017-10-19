@@ -182,7 +182,7 @@ public class TripAnalyzer extends ScenarioAnalyzerEventHandlerHomeInSHP implemen
             double actStartTime, actEndTime;
             if (considerLink(trip.startLinkId)) {
                 if (!agentCurrentActStartTime.containsKey(trip.agentId)) {
-                    actVals = getActivity("h");
+                    actVals = getActivity("ho");
                     actStartTime = 0;
                 } else {
                     actVals = getActivity(agentCurrentActPurpose.get(trip.agentId));
@@ -266,7 +266,7 @@ public class TripAnalyzer extends ScenarioAnalyzerEventHandlerHomeInSHP implemen
 	}
 
 	private ActivityResult getActivity(String activity) {
-		String act = activity.substring(0,1);
+		String act = activity.substring(0,2);
 		ActivityResult activityResult = this.activities.get(act);
 		if (activityResult == null) {
 			activityResult = new ActivityResult();

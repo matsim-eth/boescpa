@@ -52,7 +52,10 @@ public class RunEvaluation {
 				+ header_simType
 				+ header_analysisResults
 				+ header_VKM
-				+ header_Accessibility;
+				+ header_Accessibility
+				//+ header_Profitability
+				//+ header_Welfares
+				+ header_TimeUsage;
 		System.out.print(header + "\n");
 		this.writer.write(header);
 		this.writer.newLine();
@@ -98,6 +101,7 @@ public class RunEvaluation {
 			output = output.concat(getAccessibilities(pathToFolder, runId));
 			//output = output.concat(getProfitabilities(pathToFolder, runId));
 			//output = output.concat(getWelfares(pathToFolder, runId));
+			output = output.concat(getTimeUsages(pathToFolder, runId));
 			// ****************************
 			// add more information here...
 			// ****************************
@@ -105,6 +109,53 @@ public class RunEvaluation {
 		} else {
 			return null;
 		}
+	}
+
+	private static final String header_TimeUsage = DEL + "time_pt" + DEL + "time_av" + DEL + "time_car" + DEL + "time_slowmodes" +
+			DEL + "time_outarea" + DEL + "time_work" + DEL + "time_home" + DEL + "time_shop" + DEL + "time_leisure" +
+			DEL + "time_escort"  + DEL + "time_education";
+
+	private String getTimeUsages(String pathToRunFolder, String runId) throws IOException {
+		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
+				+ runId + ".output_events.xml.gz_analysisResultsTargetFunction.csv");
+		double numberOfAgents = -1;
+		Map<String, Double> timesSpent = new HashMap<>();
+		String line = reader.readLine();
+		boolean record = false;
+		while (line != null) {
+			String[] lineElements = line.split("; ");
+			if (lineElements.length <= 1) {
+				record = false;
+			} else if (lineElements[0].length() > 5 && lineElements[0].substring(0, 6).equals("Number")) {
+				numberOfAgents = Double.parseDouble(lineElements[1]);
+			} else if (record) {
+				double totalTimeSpent = Double.parseDouble(lineElements[1]) * Double.parseDouble(lineElements[2]);
+				timesSpent.put(lineElements[0], totalTimeSpent/numberOfAgents);
+			} else if (lineElements[0].equals("Mode") || lineElements[0].equals("Activity")) {
+				record = true;
+			}
+			line = reader.readLine();
+		}
+		// minutes spent on traveling
+		String output = timesSpent.keySet().contains("pt") ? DEL + df.format(timesSpent.get("pt")) : DEL;
+		output = timesSpent.keySet().contains("av") ? output + DEL + df.format(timesSpent.get("av")) : output + DEL;
+		output = timesSpent.keySet().contains("car") ? output + DEL + df.format(timesSpent.get("car")) : output + DEL;
+		output = timesSpent.keySet().contains("slow_mode") ? output + DEL + df.format(timesSpent.get("slow_mode")) : output + DEL;
+		double outArea = timesSpent.keySet().contains("outArea_pt") ? timesSpent.get("outArea_pt") : 0;
+		outArea += timesSpent.keySet().contains("outArea_car") ? timesSpent.get("outArea_car") : 0;
+		output = output + DEL + df.format(outArea);
+		// minutes spent on activities
+		//	remote work and work are taken together as "work"
+		double workTime = timesSpent.keySet().contains("re") ? timesSpent.get("re")*60 : 0;
+		workTime += timesSpent.keySet().contains("wo") ? timesSpent.get("wo")*60 : 0;
+		output = output + DEL + df.format(workTime);
+		//	30 hours to 24 hours is done by subtracting from home 6 hours ("average" swiss assumed to spend hours 24 to 30 at home)
+		output = timesSpent.keySet().contains("ho") ? output + DEL + df.format((timesSpent.get("ho")-6)*60) : output + DEL;
+		output = timesSpent.keySet().contains("sh") ? output + DEL + df.format(timesSpent.get("sh")*60) : output + DEL;
+		output = timesSpent.keySet().contains("le") ? output + DEL + df.format(timesSpent.get("le")*60) : output + DEL;
+		output = timesSpent.keySet().contains("es") ? output + DEL + df.format(timesSpent.get("es")*60) : output + DEL;
+		output = timesSpent.keySet().contains("ed") ? output + DEL + df.format(timesSpent.get("ed")*60) : output + DEL;
+		return output;
 	}
 
 	private static final String header_Accessibility = DEL + "access_total_pt" + DEL + "access_total_av" +
@@ -234,7 +285,7 @@ public class RunEvaluation {
 
 	private static final String header_analysisResults =
 			DEL + "modeShare_PT" + DEL + "modeShare_AV" + DEL + "modeShare_CAR" + DEL + "modeShare_SM" + DEL +
-					"avTravDist_PT" + DEL + "avTravDist_AV" + DEL + "avTravDist_CAR" + DEL + "avTravDist_SM" + DEL +
+					"avTripDist_PT" + DEL + "avTripDist_AV" + DEL + "avTripDist_CAR" + DEL + "avTripDist_SM" + DEL +
 					"avSpeed_PT" + DEL + "avSpeed_AV" + DEL + "avSpeed_CAR" + DEL + "avSpeed_SM";
 
 	private String getAnalysisResults(String pathToRunFolder, String runId) throws IOException {
