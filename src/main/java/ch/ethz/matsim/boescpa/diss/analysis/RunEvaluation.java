@@ -52,10 +52,14 @@ public class RunEvaluation {
 				+ header_simType
 				+ header_analysisResults
 				+ header_VKM
+				+ header_PassengerKM
+				+ header_AnzPassengers
 				+ header_Accessibility
 				//+ header_Profitability
 				//+ header_Welfares
-				+ header_TimeUsage;
+				+ header_TimeUsage
+				+ header_AVFleetSizes;
+				//+ header_AVStats;
 		System.out.print(header + "\n");
 		this.writer.write(header);
 		this.writer.newLine();
@@ -91,17 +95,21 @@ public class RunEvaluation {
 		this.writer.close();
 	}
 
-	private String analyzeFolder(String pathToFolder) throws IOException {
-		if (pathToFolder.contains("output_") || pathToFolder.contains("onlyAVoligo")) {
-			String runId = pathToFolder.substring(pathToFolder.lastIndexOf("_") + 1);
+	private String analyzeFolder(String pathToRunFolder) throws IOException {
+		if (pathToRunFolder.contains("output_") || pathToRunFolder.contains("onlyAVoligo")) {
+			String runId = pathToRunFolder.substring(pathToRunFolder.lastIndexOf("_") + 1);
 			String output = runId;
 			output = output.concat(getSimType(runId));
-			output = output.concat(getAnalysisResults(pathToFolder, runId));
-			output = output.concat(getVKT(pathToFolder, runId));
-			output = output.concat(getAccessibilities(pathToFolder, runId));
-			//output = output.concat(getProfitabilities(pathToFolder, runId));
-			//output = output.concat(getWelfares(pathToFolder, runId));
-			output = output.concat(getTimeUsages(pathToFolder, runId));
+			output = output.concat(getAnalysisResults(pathToRunFolder, runId));
+			output = output.concat(getVKT(pathToRunFolder, runId));
+			output = output.concat(getPassengerKM(pathToRunFolder, runId));
+			output = output.concat(getAnzPassengers(pathToRunFolder, runId));
+			output = output.concat(getAccessibilities(pathToRunFolder, runId));
+			//output = output.concat(getProfitabilities(pathToRunFolder, runId));
+			//output = output.concat(getWelfares(pathToRunFolder, runId));
+			output = output.concat(getTimeUsages(pathToRunFolder, runId));
+			output = output.concat(getAVFleetSizes(pathToRunFolder, runId));
+			//output = output.concat(getAVStats(pathToRunFolder, runId));
 			// ****************************
 			// add more information here...
 			// ****************************
@@ -109,6 +117,31 @@ public class RunEvaluation {
 		} else {
 			return null;
 		}
+	}
+
+	/*private static final String header_AVStats = "";
+
+	private String getAVStats(String pathToRunFolder, String runId) {
+		//int fleetSize = getFleetSize(pathToRunFolder + File.separator + runId + )
+		return "";
+	}*/
+
+	private static final String header_AVFleetSizes = DEL + "FleetSize_aTaxi" +
+			DEL + "FleetSize_aRS" + DEL + "FleetSize_aTaxi_l" + DEL + "FleetSize_aTaxi_m" + DEL + "FleetSize_aTaxi_h" +
+			DEL + "FleetSize_aRS_l" + DEL + "FleetSize_aRS_m" + DEL + "FleetSize_aRS_h";
+
+	private String getAVFleetSizes(String pathToRunFolder, String runId) throws IOException {
+		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
+				runId + ".avFleetSizes.csv");
+		String out = evalResult.keySet().contains("aTaxi") ? DEL + df.format(evalResult.get("aTaxi")*scaleFactor) : DEL + 0;
+		out = evalResult.keySet().contains("aRS") ? out + DEL + df.format(evalResult.get("aRS")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("taxi_l") ? out + DEL + df.format(evalResult.get("taxi_l")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("taxi_m") ? out + DEL + df.format(evalResult.get("taxi_m")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("taxi_h") ? out + DEL + df.format(evalResult.get("taxi_h")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("pool_l") ? out + DEL + df.format(evalResult.get("taxi_l")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("pool_m") ? out + DEL + df.format(evalResult.get("taxi_m")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("pool_h") ? out + DEL + df.format(evalResult.get("taxi_h")*scaleFactor) : out + DEL + 0;
+		return out;
 	}
 
 	private static final String header_TimeUsage = DEL + "time_pt" + DEL + "time_av" + DEL + "time_car" + DEL + "time_slowmodes" +
@@ -215,6 +248,46 @@ public class RunEvaluation {
 		output = output + DEL + valsFound.get("av_offpeak");
 		output = output + DEL + valsFound.get("car_offpeak");
 		return output;
+	}
+
+	private static final String header_AnzPassengers = DEL + "AnzPass_ptBus" + DEL + "AnzPass_ptOther" + DEL + "AnzPass_aTaxi" +
+			DEL + "AnzPass_aRS" + DEL + "AnzPass_aTaxi_l" + DEL + "AnzPass_aTaxi_m" + DEL + "AnzPass_aTaxi_h" +
+			DEL + "AnzPass_aRS_l" + DEL + "AnzPass_aRS_m" + DEL + "AnzPass_aRS_h";
+
+	private String getAnzPassengers(String pathToRunFolder, String runId) throws IOException {
+		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
+				runId + ".passenger_anz.csv");
+		String out = evalResult.keySet().contains("pt_bus") ? DEL + df.format(evalResult.get("pt_bus")*scaleFactor) : DEL + 0;
+		out = evalResult.keySet().contains("pt_other") ? out + DEL + df.format(evalResult.get("pt_other")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_aTaxi") ? out + DEL + df.format(evalResult.get("av_aTaxi")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_aRS") ? out + DEL + df.format(evalResult.get("av_aRS")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")*scaleFactor) : out + DEL + 0;
+		return out;
+	}
+
+	private static final String header_PassengerKM = DEL + "PassKM_ptBus" + DEL + "PassKM_ptOther" + DEL + "PassKM_aTaxi" +
+			DEL + "PassKM_aRS" + DEL + "PassKM_aTaxi_l" + DEL + "PassKM_aTaxi_m" + DEL + "PassKM_aTaxi_h" +
+			DEL + "PassKM_aRS_l" + DEL + "PassKM_aRS_m" + DEL + "PassKM_aRS_h";
+
+	private String getPassengerKM(String pathToRunFolder, String runId) throws IOException {
+		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
+				runId + ".passenger_km.csv");
+		String out = evalResult.keySet().contains("pt_bus") ? DEL + df.format(evalResult.get("pt_bus")*scaleFactor) : DEL + 0;
+		out = evalResult.keySet().contains("pt_other") ? out + DEL + df.format(evalResult.get("pt_other")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_aTaxi") ? out + DEL + df.format(evalResult.get("av_aTaxi")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_aRS") ? out + DEL + df.format(evalResult.get("av_aRS")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")*scaleFactor) : out + DEL + 0;
+		return out;
 	}
 
 	private static final String header_VKM = DEL + "totalVKM_av" + DEL + "totalVKM_av-car" + DEL + "totalVKM_all";
