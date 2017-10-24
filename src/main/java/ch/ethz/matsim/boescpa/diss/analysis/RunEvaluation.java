@@ -21,6 +21,8 @@
 
 package ch.ethz.matsim.boescpa.diss.analysis;
 
+import org.matsim.api.core.v01.population.Population;
+import org.matsim.core.population.io.PopulationReader;
 import org.matsim.core.utils.io.IOUtils;
 
 import java.io.*;
@@ -50,6 +52,7 @@ public class RunEvaluation {
 				+ "results_summary.csv");
 		String header = "runID"
 				+ header_simType
+				+ header_avgExecScore
 				+ header_analysisResults
 				+ header_VKM
 				+ header_PassengerKM
@@ -100,6 +103,7 @@ public class RunEvaluation {
 			String runId = pathToRunFolder.substring(pathToRunFolder.lastIndexOf("output_") + 7);
 			String output = runId;
 			output = output.concat(getSimType(runId));
+			output = output.concat(getAvgExecScore(pathToRunFolder, runId));
 			output = output.concat(getAnalysisResults(pathToRunFolder, runId));
 			output = output.concat(getVKT(pathToRunFolder, runId));
 			output = output.concat(getPassengerKM(pathToRunFolder, runId));
@@ -417,6 +421,15 @@ public class RunEvaluation {
 			}
 		}
 		return modeShares + travDists + speeds;
+	}
+
+	private static final String header_avgExecScore = DEL + "avgExecScore";
+
+	private String getAvgExecScore(String pathToRunFolder, String runId) throws IOException {
+		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
+				+ runId + ".output_plans.xml.gz_avgExec.txt");
+		String line = reader.readLine();
+		return DEL + line.split(";")[1];
 	}
 
 	private static final String header_simType = DEL + "simClass" + DEL +
