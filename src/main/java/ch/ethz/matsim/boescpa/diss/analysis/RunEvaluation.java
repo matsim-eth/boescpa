@@ -96,8 +96,8 @@ public class RunEvaluation {
 	}
 
 	private String analyzeFolder(String pathToRunFolder) throws IOException {
-		if (pathToRunFolder.contains("output_") || pathToRunFolder.contains("onlyAVoligo")) {
-			String runId = pathToRunFolder.substring(pathToRunFolder.lastIndexOf("_") + 1);
+		if (pathToRunFolder.contains("output_")) {
+			String runId = pathToRunFolder.substring(pathToRunFolder.lastIndexOf("output_") + 7);
 			String output = runId;
 			output = output.concat(getSimType(runId));
 			output = output.concat(getAnalysisResults(pathToRunFolder, runId));
@@ -131,16 +131,17 @@ public class RunEvaluation {
 			DEL + "FleetSize_aRS_l" + DEL + "FleetSize_aRS_m" + DEL + "FleetSize_aRS_h";
 
 	private String getAVFleetSizes(String pathToRunFolder, String runId) throws IOException {
-		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
-				runId + ".avFleetSizes.csv");
+		Map<String, Double> evalResult = !simClass.equals("nonAV") ?
+				evaluateFile(pathToRunFolder + File.separator + runId + ".avFleetSizes.csv") :
+				new HashMap<>();
 		String out = evalResult.keySet().contains("aTaxi") ? DEL + df.format(evalResult.get("aTaxi")*scaleFactor) : DEL + 0;
 		out = evalResult.keySet().contains("aRS") ? out + DEL + df.format(evalResult.get("aRS")*scaleFactor) : out + DEL + 0;
 		out = evalResult.keySet().contains("taxi_l") ? out + DEL + df.format(evalResult.get("taxi_l")*scaleFactor) : out + DEL + 0;
 		out = evalResult.keySet().contains("taxi_m") ? out + DEL + df.format(evalResult.get("taxi_m")*scaleFactor) : out + DEL + 0;
 		out = evalResult.keySet().contains("taxi_h") ? out + DEL + df.format(evalResult.get("taxi_h")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("pool_l") ? out + DEL + df.format(evalResult.get("taxi_l")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("pool_m") ? out + DEL + df.format(evalResult.get("taxi_m")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("pool_h") ? out + DEL + df.format(evalResult.get("taxi_h")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("pool_l") ? out + DEL + df.format(evalResult.get("pool_l")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("pool_m") ? out + DEL + df.format(evalResult.get("pool_m")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("pool_h") ? out + DEL + df.format(evalResult.get("pool_h")*scaleFactor) : out + DEL + 0;
 		return out;
 	}
 
@@ -170,25 +171,25 @@ public class RunEvaluation {
 			line = reader.readLine();
 		}
 		// minutes spent on traveling
-		String output = timesSpent.keySet().contains("pt") ? DEL + df.format(timesSpent.get("pt")) : DEL;
-		output = timesSpent.keySet().contains("av") ? output + DEL + df.format(timesSpent.get("av")) : output + DEL;
-		output = timesSpent.keySet().contains("car") ? output + DEL + df.format(timesSpent.get("car")) : output + DEL;
-		output = timesSpent.keySet().contains("slow_mode") ? output + DEL + df.format(timesSpent.get("slow_mode")) : output + DEL;
+		String out = timesSpent.keySet().contains("pt") ? DEL + df.format(timesSpent.get("pt")) : DEL + 0;
+		out = timesSpent.keySet().contains("av") ? out + DEL + df.format(timesSpent.get("av")) : out + DEL + 0;
+		out = timesSpent.keySet().contains("car") ? out + DEL + df.format(timesSpent.get("car")) : out + DEL + 0;
+		out = timesSpent.keySet().contains("slow_mode") ? out + DEL + df.format(timesSpent.get("slow_mode")) : out + DEL + 0;
 		double outArea = timesSpent.keySet().contains("outArea_pt") ? timesSpent.get("outArea_pt") : 0;
 		outArea += timesSpent.keySet().contains("outArea_car") ? timesSpent.get("outArea_car") : 0;
-		output = output + DEL + df.format(outArea);
+		out = out + DEL + df.format(outArea);
 		// minutes spent on activities
 		//	remote work and work are taken together as "work"
 		double workTime = timesSpent.keySet().contains("re") ? timesSpent.get("re")*60 : 0;
 		workTime += timesSpent.keySet().contains("wo") ? timesSpent.get("wo")*60 : 0;
-		output = output + DEL + df.format(workTime);
+		out = out + DEL + df.format(workTime);
 		//	30 hours to 24 hours is done by subtracting from home 6 hours ("average" swiss assumed to spend hours 24 to 30 at home)
-		output = timesSpent.keySet().contains("ho") ? output + DEL + df.format((timesSpent.get("ho")-6)*60) : output + DEL;
-		output = timesSpent.keySet().contains("sh") ? output + DEL + df.format(timesSpent.get("sh")*60) : output + DEL;
-		output = timesSpent.keySet().contains("le") ? output + DEL + df.format(timesSpent.get("le")*60) : output + DEL;
-		output = timesSpent.keySet().contains("es") ? output + DEL + df.format(timesSpent.get("es")*60) : output + DEL;
-		output = timesSpent.keySet().contains("ed") ? output + DEL + df.format(timesSpent.get("ed")*60) : output + DEL;
-		return output;
+		out = timesSpent.keySet().contains("ho") ? out + DEL + df.format((timesSpent.get("ho")-6)*60) : out + DEL + 0;
+		out = timesSpent.keySet().contains("sh") ? out + DEL + df.format(timesSpent.get("sh")*60) : out + DEL + 0;
+		out = timesSpent.keySet().contains("le") ? out + DEL + df.format(timesSpent.get("le")*60) : out + DEL + 0;
+		out = timesSpent.keySet().contains("es") ? out + DEL + df.format(timesSpent.get("es")*60) : out + DEL + 0;
+		out = timesSpent.keySet().contains("ed") ? out + DEL + df.format(timesSpent.get("ed")*60) : out + DEL + 0;
+		return out;
 	}
 
 	private static final String header_Accessibility = DEL + "access_total_pt" + DEL + "access_total_av" +
@@ -198,56 +199,59 @@ public class RunEvaluation {
 	private String getAccessibilities(String pathToRunFolder, String runId) throws IOException {
 		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
 				+ runId + ".output_events.xml.gz_analysisResultsTargetFunction.csv");
-		for (int i = 0; i < 40; i++) reader.readLine();
 		String line = reader.readLine();
-		int numberOfValsFound = 0;
+		while (!line.contains("accessibilities")) line = reader.readLine();
+		reader.readLine(); line = reader.readLine();
+		int numberOfEmptyLines = 0;
 		Map<String, String> valsFound = new HashMap<>();
-		while(numberOfValsFound < 9 || line != null) {
+		while(numberOfEmptyLines < 5 && line != null) {
+			if (line.equals("")) {
+				numberOfEmptyLines++;
+				line = reader.readLine();
+				continue;
+			}
 			String[] lineElements = line.split("; ");
-			switch (lineElements[0]) {
+			switch (lineElements[0].trim()) {
 				case "pt":
-					if (numberOfValsFound < 3) {
+					if (numberOfEmptyLines < 1) {
 						valsFound.put("pt_total", lineElements[1]);
-					} else if (numberOfValsFound < 6) {
+					} else if (numberOfEmptyLines < 3) {
 						valsFound.put("pt_peak", lineElements[1]);
 					} else {
 						valsFound.put("pt_offpeak", lineElements[1]);
 					}
-					numberOfValsFound++;
 					break;
 				case "av":
-					if (numberOfValsFound < 3) {
+					if (numberOfEmptyLines < 1) {
 						valsFound.put("av_total", lineElements[1]);
-					} else if (numberOfValsFound < 6) {
+					} else if (numberOfEmptyLines < 3) {
 						valsFound.put("av_peak", lineElements[1]);
 					} else {
 						valsFound.put("av_offpeak", lineElements[1]);
 					}
-					numberOfValsFound++;
 					break;
 				case "car":
-					if (numberOfValsFound < 3) {
+					if (numberOfEmptyLines < 1) {
 						valsFound.put("car_total", lineElements[1]);
-					} else if (numberOfValsFound < 6) {
+					} else if (numberOfEmptyLines < 3) {
 						valsFound.put("car_peak", lineElements[1]);
 					} else {
 						valsFound.put("car_offpeak", lineElements[1]);
 					}
-					numberOfValsFound++;
 					break;
 			}
 			line = reader.readLine();
 		}
-		String output = DEL + valsFound.get("pt_total");
-		output = output + DEL + valsFound.get("av_total");
-		output = output + DEL + valsFound.get("car_total");
-		output = output + DEL + valsFound.get("pt_peak");
-		output = output + DEL + valsFound.get("av_peak");
-		output = output + DEL + valsFound.get("car_peak");
-		output = output + DEL + valsFound.get("pt_offpeak");
-		output = output + DEL + valsFound.get("av_offpeak");
-		output = output + DEL + valsFound.get("car_offpeak");
-		return output;
+		String out = valsFound.containsKey("pt_total") ? DEL + valsFound.get("pt_total") : DEL + 0;
+		out = valsFound.containsKey("av_total") ? out + DEL + valsFound.get("av_total") : out + DEL + 0;
+		out = valsFound.containsKey("car_total") ? out + DEL + valsFound.get("car_total") : out + DEL + 0;
+		out = valsFound.containsKey("pt_peak") ? out + DEL + valsFound.get("pt_peak") : out + DEL + 0;
+		out = valsFound.containsKey("av_peak") ? out + DEL + valsFound.get("av_peak") : out + DEL + 0;
+		out = valsFound.containsKey("car_peak") ? out + DEL + valsFound.get("car_peak") : out + DEL + 0;
+		out = valsFound.containsKey("pt_offpeak") ? out + DEL + valsFound.get("pt_offpeak") : out + DEL + 0;
+		out = valsFound.containsKey("av_offpeak") ? out + DEL + valsFound.get("av_offpeak") : out + DEL + 0;
+		out = valsFound.containsKey("car_offpeak") ? out + DEL + valsFound.get("car_offpeak") : out + DEL + 0;
+		return out;
 	}
 
 	private static final String header_AnzPassengers = DEL + "AnzPass_ptBus" + DEL + "AnzPass_ptOther" + DEL + "AnzPass_aTaxi" +
@@ -264,9 +268,9 @@ public class RunEvaluation {
 		out = evalResult.keySet().contains("av_taxi_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")*scaleFactor) : out + DEL + 0;
 		out = evalResult.keySet().contains("av_taxi_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")*scaleFactor) : out + DEL + 0;
 		out = evalResult.keySet().contains("av_taxi_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_pool_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_pool_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_pool_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_l") ? out + DEL + df.format(evalResult.get("av_pool_l")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_m") ? out + DEL + df.format(evalResult.get("av_pool_m")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_h") ? out + DEL + df.format(evalResult.get("av_pool_h")*scaleFactor) : out + DEL + 0;
 		return out;
 	}
 
@@ -284,13 +288,13 @@ public class RunEvaluation {
 		out = evalResult.keySet().contains("av_taxi_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")*scaleFactor) : out + DEL + 0;
 		out = evalResult.keySet().contains("av_taxi_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")*scaleFactor) : out + DEL + 0;
 		out = evalResult.keySet().contains("av_taxi_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_pool_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_pool_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_pool_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_l") ? out + DEL + df.format(evalResult.get("av_pool_l")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_m") ? out + DEL + df.format(evalResult.get("av_pool_m")*scaleFactor) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_h") ? out + DEL + df.format(evalResult.get("av_pool_h")*scaleFactor) : out + DEL + 0;
 		return out;
 	}
 
-	private static final String header_VKM = DEL + "totalVKM_av" + DEL + "totalVKM_av-car" + DEL + "totalVKM_all";
+	private static final String header_VKM = DEL + "totalVKM_av" + DEL + "totalVKM_avANDcar" + DEL + "totalVKM_all";
 
 	private String getVKT(String pathToRunFolder, String runId) throws IOException {
 		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
@@ -420,20 +424,20 @@ public class RunEvaluation {
 			"serviceTypeAV" + DEL + "AVprice" + DEL + "AVbaseFare" + DEL + "votAV" + DEL + "levelOfServiceAV";
 
 	private String getSimType(String runId) {
-		String output = DEL + runId.replace("-", DEL);
+		String output = runId.replace("-", DEL);
 		switch (simClass) {
 			case "combination":
 				return DEL + simClass + DEL + output;
 			case "nonAV":
-				return DEL + simClass + DEL + output + DEL + ";;;;;";
+				return DEL + simClass + DEL + output + DEL + ";;;;";
 			case "oligo":
 				if (output.contains("onlyAVoligo")) {
 					return DEL + simClass + ";;;;;;;;;";
 				} else {
-					return DEL + simClass + DEL + output + DEL + ";;;;;";
+					return DEL + simClass + DEL + output + DEL + ";;;;";
 				}
 			case "onlyAV":
-				return DEL + simClass + DEL + ";;;" + output;
+				return DEL + simClass + DEL + ";;;;" + output;
 			default:
 				return "";
 		}
