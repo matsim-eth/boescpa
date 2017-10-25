@@ -21,11 +21,12 @@
 
 package ch.ethz.matsim.boescpa.diss.analysis;
 
-import org.matsim.api.core.v01.population.Population;
-import org.matsim.core.population.io.PopulationReader;
 import org.matsim.core.utils.io.IOUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
@@ -265,16 +266,16 @@ public class RunEvaluation {
 	private String getAnzPassengers(String pathToRunFolder, String runId) throws IOException {
 		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
 				runId + ".passenger_anz.csv");
-		String out = evalResult.keySet().contains("pt_bus") ? DEL + df.format(evalResult.get("pt_bus")*scaleFactor) : DEL + 0;
-		out = evalResult.keySet().contains("pt_other") ? out + DEL + df.format(evalResult.get("pt_other")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_aTaxi") ? out + DEL + df.format(evalResult.get("av_aTaxi")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_aRS") ? out + DEL + df.format(evalResult.get("av_aRS")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_taxi_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_taxi_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_taxi_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_pool_l") ? out + DEL + df.format(evalResult.get("av_pool_l")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_pool_m") ? out + DEL + df.format(evalResult.get("av_pool_m")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_pool_h") ? out + DEL + df.format(evalResult.get("av_pool_h")*scaleFactor) : out + DEL + 0;
+		String out = evalResult.keySet().contains("pt_bus") ? DEL + df.format(evalResult.get("pt_bus")) : DEL + 0;
+		out = evalResult.keySet().contains("pt_other") ? out + DEL + df.format(evalResult.get("pt_other")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_aTaxi") ? out + DEL + df.format(evalResult.get("av_aTaxi")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_aRS") ? out + DEL + df.format(evalResult.get("av_aRS")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_l") ? out + DEL + df.format(evalResult.get("av_pool_l")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_m") ? out + DEL + df.format(evalResult.get("av_pool_m")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_h") ? out + DEL + df.format(evalResult.get("av_pool_h")) : out + DEL + 0;
 		return out;
 	}
 
@@ -285,43 +286,38 @@ public class RunEvaluation {
 	private String getPassengerKM(String pathToRunFolder, String runId) throws IOException {
 		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
 				runId + ".passenger_km.csv");
-		String out = evalResult.keySet().contains("pt_bus") ? DEL + df.format(evalResult.get("pt_bus")*scaleFactor) : DEL + 0;
-		out = evalResult.keySet().contains("pt_other") ? out + DEL + df.format(evalResult.get("pt_other")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_aTaxi") ? out + DEL + df.format(evalResult.get("av_aTaxi")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_aRS") ? out + DEL + df.format(evalResult.get("av_aRS")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_taxi_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_taxi_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_taxi_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_pool_l") ? out + DEL + df.format(evalResult.get("av_pool_l")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_pool_m") ? out + DEL + df.format(evalResult.get("av_pool_m")*scaleFactor) : out + DEL + 0;
-		out = evalResult.keySet().contains("av_pool_h") ? out + DEL + df.format(evalResult.get("av_pool_h")*scaleFactor) : out + DEL + 0;
+		String out = evalResult.keySet().contains("pt_bus") ? DEL + df.format(evalResult.get("pt_bus")) : DEL + 0;
+		out = evalResult.keySet().contains("pt_other") ? out + DEL + df.format(evalResult.get("pt_other")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_aTaxi") ? out + DEL + df.format(evalResult.get("av_aTaxi")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_aRS") ? out + DEL + df.format(evalResult.get("av_aRS")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_l") ? out + DEL + df.format(evalResult.get("av_pool_l")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_m") ? out + DEL + df.format(evalResult.get("av_pool_m")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_h") ? out + DEL + df.format(evalResult.get("av_pool_h")) : out + DEL + 0;
 		return out;
 	}
 
-	private static final String header_VKM = DEL + "totalVKM_av" + DEL + "totalVKM_avANDcar" + DEL + "totalVKM_all";
+	private static final String header_VKM = DEL + "VehKM_ptBus" + DEL + "VehKM_ptOther" + DEL + "VehKM_car" +
+			DEL + "VehKM_aTaxi" + DEL + "VehKM_aRS" + DEL + "VehKM_aTaxi_l" + DEL + "VehKM_aTaxi_m" +
+			DEL + "VehKM_aTaxi_h" + DEL + "VehKM_aRS_l" + DEL + "VehKM_aRS_m" + DEL + "VehKM_aRS_h";
 
 	private String getVKT(String pathToRunFolder, String runId) throws IOException {
 		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
 				runId + ".vehicle_km.csv");
-		String output = "";
-		// total vkm av
-		double totalVKM = 0;
-		for (String mode : evalResult.keySet()) {
-			if (mode.contains("av")) totalVKM += evalResult.get(mode);
-		}
-		output = output + DEL + df.format(totalVKM*scaleFactor);
-		// total vkm car and av
-		for (String mode : evalResult.keySet()) {
-			if (mode.equals("car")) totalVKM += evalResult.get(mode);
-		}
-		output = output + DEL + df.format(totalVKM*scaleFactor);
-		// total vkm
-		totalVKM = 0;
-		for (String mode : evalResult.keySet()) {
-			totalVKM += evalResult.get(mode);
-		}
-		output = output + DEL + df.format(totalVKM*scaleFactor);
-		return output;
+		String out = evalResult.keySet().contains("pt_bus") ? DEL + df.format(evalResult.get("pt_bus")) : DEL + 0;
+		out = evalResult.keySet().contains("pt_other") ? out + DEL + df.format(evalResult.get("pt_other")) : out + DEL + 0;
+		out = evalResult.keySet().contains("car") ? out + DEL + df.format(evalResult.get("car")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_aTaxi") ? out + DEL + df.format(evalResult.get("av_aTaxi")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_aRS") ? out + DEL + df.format(evalResult.get("av_aRS")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_l") ? out + DEL + df.format(evalResult.get("av_taxi_l")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_m") ? out + DEL + df.format(evalResult.get("av_taxi_m")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_taxi_h") ? out + DEL + df.format(evalResult.get("av_taxi_h")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_l") ? out + DEL + df.format(evalResult.get("av_pool_l")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_m") ? out + DEL + df.format(evalResult.get("av_pool_m")) : out + DEL + 0;
+		out = evalResult.keySet().contains("av_pool_h") ? out + DEL + df.format(evalResult.get("av_pool_h")) : out + DEL + 0;
+		return out;
 	}
 
 	private Map<String, Double> evaluateFile(String pathToFile) throws IOException {
