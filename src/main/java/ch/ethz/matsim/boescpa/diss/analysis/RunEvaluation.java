@@ -57,7 +57,7 @@ public class RunEvaluation {
 				+ header_VKM
 				+ header_PassengerKM
 				+ header_AnzPassengers
-				+ header_Accessibility
+				//+ header_Accessibility
 				//+ header_Profitability
 				//+ header_Welfares
 				+ header_TimeUsage
@@ -108,7 +108,7 @@ public class RunEvaluation {
 			output = output.concat(getVKT(pathToRunFolder, runId));
 			output = output.concat(getPassengerKM(pathToRunFolder, runId));
 			output = output.concat(getAnzPassengers(pathToRunFolder, runId));
-			output = output.concat(getAccessibilities(pathToRunFolder, runId));
+			//output = output.concat(getAccessibilities(pathToRunFolder, runId));
 			//output = output.concat(getProfitabilities(pathToRunFolder, runId));
 			//output = output.concat(getWelfares(pathToRunFolder, runId));
 			output = output.concat(getTimeUsages(pathToRunFolder, runId));
@@ -365,9 +365,11 @@ public class RunEvaluation {
 	}
 
 	private static final String header_analysisResults =
-			DEL + "modeShare_PT" + DEL + "modeShare_AV" + DEL + "modeShare_CAR" + DEL + "modeShare_SM" + DEL +
-					"avTripDist_PT" + DEL + "avTripDist_AV" + DEL + "avTripDist_CAR" + DEL + "avTripDist_SM" + DEL +
-					"avSpeed_PT" + DEL + "avSpeed_AV" + DEL + "avSpeed_CAR" + DEL + "avSpeed_SM";
+			DEL + "modeShare_PT" + DEL + "modeShare_AV" + DEL + "modeShare_CAR" + DEL + "modeShare_SM" +
+					DEL + "anzTrips_PT" + DEL + "anzTrips_AV" + DEL + "anzTrips_CAR" + DEL + "anzTrips_SM" +
+					DEL + "avTripDist_PT" + DEL + "avTripDist_AV" + DEL + "avTripDist_CAR" + DEL + "avTripDist_SM" +
+					DEL + "avTripDurs_PT" + DEL + "avTripDurs_AV" + DEL + "avTripDurs_CAR" + DEL + "avTripDurs_SM" +
+					DEL + "avSpeed_PT" + DEL + "avSpeed_AV" + DEL + "avSpeed_CAR" + DEL + "avSpeed_SM";
 
 	private String getAnalysisResults(String pathToRunFolder, String runId) throws IOException {
 		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
@@ -409,18 +411,20 @@ public class RunEvaluation {
 			}
 			line = reader.readLine();
 		}
-		String modeShares = "", travDists = "", speeds = "";
+		String modeShares = "", travDists = "", speeds = "", travDurs = "", anzTrips = "";
 		for (int i = 0; i < 4; i++) {
 			// mode share
 			modeShares = modeShares.concat(DEL + df.format(numberOfTrips[i]/totalNumberOfTrips));
+			anzTrips = anzTrips.concat(DEL + df.format(numberOfTrips[i]));
 			travDists = travDists.concat(DEL + df.format(avDist[i]));
+			travDurs = travDurs.concat(DEL + df.format(avDur[i]));
 			if (avDur[i] > 0) {
 				speeds = speeds.concat(DEL + df.format(avDist[i] / (avDur[i] / 60)));
 			} else {
 				speeds = speeds.concat(DEL + "0");
 			}
 		}
-		return modeShares + travDists + speeds;
+		return modeShares + anzTrips + travDists + travDurs + speeds;
 	}
 
 	private static final String header_avgExecScore = DEL + "avgExecScore";
