@@ -53,12 +53,11 @@ public class RunEvaluation {
 				+ "results_summary.csv");
 		String header = "runID"
 				+ header_simType
-				+ header_avgExecScore
+				+ header_PopStats
 				+ header_analysisResults
 				+ header_VKM
 				+ header_PassengerKM
 				+ header_AnzPassengers
-				+ header_PopStats
 				+ header_TimeUsage
 				+ header_AVFleetSizes;
 				//+ header_AVStats;
@@ -103,7 +102,6 @@ public class RunEvaluation {
 			String runId = pathToRunFolder.substring(pathToRunFolder.lastIndexOf("output_") + 7);
 			String output = runId;
 			output = output.concat(getSimType(runId));
-			output = output.concat(getAvgExecScore(pathToRunFolder, runId));
 			output = output.concat(getAnalysisResults(pathToRunFolder, runId));
 			output = output.concat(getVKT(pathToRunFolder, runId));
 			output = output.concat(getPassengerKM(pathToRunFolder, runId));
@@ -191,9 +189,9 @@ public class RunEvaluation {
 		return out;
 	}*/
 
-	private static final String header_AVFleetSizes = DEL + "FleetSize_aTaxi" +
-			DEL + "FleetSize_aRS" + DEL + "FleetSize_aTaxi_l" + DEL + "FleetSize_aTaxi_m" + DEL + "FleetSize_aTaxi_h" +
-			DEL + "FleetSize_aRS_l" + DEL + "FleetSize_aRS_m" + DEL + "FleetSize_aRS_h";
+	private static final String header_AVFleetSizes = DEL + "fleetSize_aTaxi" +
+			DEL + "fleetSize_aRS" + DEL + "fleetSize_aTaxi_l" + DEL + "fleetSize_aTaxi_m" + DEL + "fleetSize_aTaxi_h" +
+			DEL + "fleetSize_aRS_l" + DEL + "fleetSize_aRS_m" + DEL + "fleetSize_aRS_h";
 
 	private String getAVFleetSizes(String pathToRunFolder, String runId) throws IOException {
 		Map<String, Double> evalResult = !simClass.equals("nonAV") ?
@@ -257,7 +255,7 @@ public class RunEvaluation {
 		return out;
 	}
 
-	private static final String header_PopStats = DEL + "AverageExecScore" + DEL + "ExpectedMaximumUtilityPop";
+	private static final String header_PopStats = DEL + "averageExecScore" + DEL + "expectedMaximumUtilityPop";
 
 	private String getPopStats(String pathToRunFolder, String runId) throws IOException {
 		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
@@ -269,9 +267,9 @@ public class RunEvaluation {
 		return DEL + averageExecScore + DEL + emu;
 	}
 
-	private static final String header_AnzPassengers = DEL + "AnzPass_ptBus" + DEL + "AnzPass_ptOther" + DEL + "AnzPass_aTaxi" +
-			DEL + "AnzPass_aRS" + DEL + "AnzPass_aTaxi_l" + DEL + "AnzPass_aTaxi_m" + DEL + "AnzPass_aTaxi_h" +
-			DEL + "AnzPass_aRS_l" + DEL + "AnzPass_aRS_m" + DEL + "AnzPass_aRS_h";
+	private static final String header_AnzPassengers = DEL + "anzPass_ptBus" + DEL + "anzPass_ptOther" + DEL + "anzPass_aTaxi" +
+			DEL + "anzPass_aRS" + DEL + "anzPass_aTaxi_l" + DEL + "anzPass_aTaxi_m" + DEL + "anzPass_aTaxi_h" +
+			DEL + "anzPass_aRS_l" + DEL + "anzPass_aRS_m" + DEL + "anzPass_aRS_h";
 
 	private String getAnzPassengers(String pathToRunFolder, String runId) throws IOException {
 		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
@@ -289,9 +287,9 @@ public class RunEvaluation {
 		return out;
 	}
 
-	private static final String header_PassengerKM = DEL + "PassKM_ptBus" + DEL + "PassKM_ptOther" + DEL + "PassKM_aTaxi" +
-			DEL + "PassKM_aRS" + DEL + "PassKM_aTaxi_l" + DEL + "PassKM_aTaxi_m" + DEL + "PassKM_aTaxi_h" +
-			DEL + "PassKM_aRS_l" + DEL + "PassKM_aRS_m" + DEL + "PassKM_aRS_h";
+	private static final String header_PassengerKM = DEL + "passKM_ptBus" + DEL + "passKM_ptOther" + DEL + "passKM_aTaxi" +
+			DEL + "passKM_aRS" + DEL + "passKM_aTaxi_l" + DEL + "passKM_aTaxi_m" + DEL + "passKM_aTaxi_h" +
+			DEL + "passKM_aRS_l" + DEL + "passKM_aRS_m" + DEL + "passKM_aRS_h";
 
 	private String getPassengerKM(String pathToRunFolder, String runId) throws IOException {
 		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
@@ -309,9 +307,9 @@ public class RunEvaluation {
 		return out;
 	}
 
-	private static final String header_VKM = DEL + "VehKM_ptBus" + DEL + "VehKM_ptOther" + DEL + "VehKM_car" +
-			DEL + "VehKM_aTaxi" + DEL + "VehKM_aRS" + DEL + "VehKM_aTaxi_l" + DEL + "VehKM_aTaxi_m" +
-			DEL + "VehKM_aTaxi_h" + DEL + "VehKM_aRS_l" + DEL + "VehKM_aRS_m" + DEL + "VehKM_aRS_h";
+	private static final String header_VKM = DEL + "vehKM_ptBus" + DEL + "vehKM_ptOther" + DEL + "vehKM_car" +
+			DEL + "vehKM_aTaxi" + DEL + "vehKM_aRS" + DEL + "vehKM_aTaxi_l" + DEL + "vehKM_aTaxi_m" +
+			DEL + "vehKM_aTaxi_h" + DEL + "vehKM_aRS_l" + DEL + "vehKM_aRS_m" + DEL + "vehKM_aRS_h";
 
 	private String getVKT(String pathToRunFolder, String runId) throws IOException {
 		Map<String, Double> evalResult = evaluateFile(pathToRunFolder + File.separator +
@@ -433,18 +431,9 @@ public class RunEvaluation {
 		return modeShares + anzTrips + travDists + travDurs + speeds;
 	}
 
-	private static final String header_avgExecScore = DEL + "avgExecScore";
-
-	private String getAvgExecScore(String pathToRunFolder, String runId) throws IOException {
-		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
-				+ runId + ".output_plans.xml.gz_avgExec.txt");
-		String line = reader.readLine();
-		return DEL + line.split(";")[1];
-	}
-
 	private static final String header_simType = DEL + "simClass" + DEL +
 			"aPTprice" + DEL + "aMITprice" + DEL + "emptyRides" + DEL + "votMIT" + DEL +
-			"serviceTypeAV" + DEL + "AVprice" + DEL + "AVbaseFare" + DEL + "votAV" + DEL + "levelOfServiceAV";
+			"serviceTypeAV" + DEL + "avPrice" + DEL + "avBaseFare" + DEL + "votAV" + DEL + "levelOfServiceAV";
 
 	private String getSimType(String runId) {
 		String output = runId.replace("-", DEL);
