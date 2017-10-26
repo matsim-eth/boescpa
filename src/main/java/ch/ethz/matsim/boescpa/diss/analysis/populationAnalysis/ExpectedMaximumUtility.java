@@ -25,7 +25,9 @@ import ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.ScenarioAnalyzer;
 import ch.ethz.matsim.boescpa.lib.tools.coordUtils.CoordAnalyzer;
 import ch.ethz.matsim.boescpa.lib.tools.utils.PopulationUtils;
 import org.matsim.api.core.v01.population.Person;
+import org.matsim.api.core.v01.population.Plan;
 import org.matsim.api.core.v01.population.Population;
+import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.utils.io.IOUtils;
 
 import java.io.BufferedWriter;
@@ -35,49 +37,57 @@ import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
 /**
- * WHAT IS IT FOR?
+ * Calculates the Expected Maximum Utility of a population as defined in:
+ * Kaddoura, I., B. Kickhöfer, A. Neumann and A. Tirachini (2015) Optimal
+ * public transport pricing - towards an agent-based marginal social cost
+ * approach, Journal of Transport Economics and Policy, 49 (2) 200–218.
  *
  * @author boescpa
  */
-public class AvgExecScore {
+public class ExpectedMaximumUtility {
 
 	private final Population population;
+	private final double absMarginalUtilityOfMoney;
 	private final CoordAnalyzer coordAnalyzer;
 	private final DecimalFormat df;
 
-	public AvgExecScore(Population population, CoordAnalyzer coordAnalyzer) {
+	public ExpectedMaximumUtility(Population population, double marginalUtilityOfMoney, CoordAnalyzer coordAnalyzer) {
 		this.population = population;
+		this.absMarginalUtilityOfMoney = Math.abs(marginalUtilityOfMoney);
 		this.coordAnalyzer = coordAnalyzer;
 		this.df = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
 		this.df.setMaximumFractionDigits(340);
 	}
 
-	public AvgExecScore(String pathToPopulation, String path2HomesSHP) {
-		this(PopulationUtils.readPopulation(pathToPopulation), Utils.getCoordAnalyzer(path2HomesSHP));
+	public ExpectedMaximumUtility(String pathToPopulation, double marginalUtilityOfMoney, String path2HomesSHP) {
+		this(PopulationUtils.readPopulation(pathToPopulation), marginalUtilityOfMoney, Utils.getCoordAnalyzer(path2HomesSHP));
 	}
 
 	public static void main(final String[] args) throws IOException {
 		String pathToPopulation = args[0];
-		String pathToHomesSHP = args[1];
-		AvgExecScore avgExecScore = new AvgExecScore(pathToPopulation, pathToHomesSHP);
-		BufferedWriter writer = IOUtils.getBufferedWriter(pathToPopulation.concat("_avgExec.txt"));
-		writer.write(avgExecScore.createResults());
+		String pathToConfig = args[1];
+		String pathToHomesSHP = args[2];
+		ExpectedMaximumUtility emu = new ExpectedMaximumUtility(pathToPopulation,
+				ConfigUtils.loadConfig(pathToConfig).planCalcScore().getMarginalUtilityOfMoney(), pathToHomesSHP);
+		BufferedWriter writer = IOUtils.getBufferedWriter(pathToPopulation.concat("_EMU.txt"));
+		writer.write(emu.createResults());
 		writer.close();
 	}
 
 	public String createResults() {
-		double scoreSum = 0;
-		double numberOfAgents = 0;
+		double emuSum = 0;
 		for (Person person : population.getPersons().values()) {
 			if (!person.getId().toString().contains("pt") && Utils.hasHomeInArea(person, coordAnalyzer)) {
-				double score = person.getSelectedPlan().getScore();
-				if (score > -10000) {
-					scoreSum += score;
-					numberOfAgents++;
+				double plans95MaxScore = 0.95*person.getPlans().stream().mapToDouble(Plan::getScore).max().orElse(1);
+				double expSumOfPlansScore = 0;
+				for (Plan plan : person.getPlans()) {
+					expSumOfPlansScore += Math.exp(plan.getScore()-plans95MaxScore);
 				}
+				double logSumOfPlansScore = plans95MaxScore + Math.log(expSumOfPlansScore);
+				emuSum += logSumOfPlansScore / absMarginalUtilityOfMoney;
 			}
 		}
-		return "Average Exec Score: " + ScenarioAnalyzer.DEL + df.format(scoreSum/numberOfAgents) + ScenarioAnalyzer.NL;
+		return "Expected Maximum Utility population: " + ScenarioAnalyzer.DEL + df.format(emuSum) + ScenarioAnalyzer.NL;
 	}
 
 }

@@ -21,63 +21,40 @@
 
 package ch.ethz.matsim.boescpa.diss.analysis.populationAnalysis;
 
-import ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.ScenarioAnalyzer;
 import ch.ethz.matsim.boescpa.lib.tools.coordUtils.CoordAnalyzer;
 import ch.ethz.matsim.boescpa.lib.tools.utils.PopulationUtils;
-import org.matsim.api.core.v01.population.Person;
 import org.matsim.api.core.v01.population.Population;
+import org.matsim.core.config.Config;
+import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.utils.io.IOUtils;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
 
 /**
  * WHAT IS IT FOR?
  *
  * @author boescpa
  */
-public class AvgExecScore {
-
-	private final Population population;
-	private final CoordAnalyzer coordAnalyzer;
-	private final DecimalFormat df;
-
-	public AvgExecScore(Population population, CoordAnalyzer coordAnalyzer) {
-		this.population = population;
-		this.coordAnalyzer = coordAnalyzer;
-		this.df = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-		this.df.setMaximumFractionDigits(340);
-	}
-
-	public AvgExecScore(String pathToPopulation, String path2HomesSHP) {
-		this(PopulationUtils.readPopulation(pathToPopulation), Utils.getCoordAnalyzer(path2HomesSHP));
-	}
+public class AnalyzePopulation {
 
 	public static void main(final String[] args) throws IOException {
 		String pathToPopulation = args[0];
-		String pathToHomesSHP = args[1];
-		AvgExecScore avgExecScore = new AvgExecScore(pathToPopulation, pathToHomesSHP);
-		BufferedWriter writer = IOUtils.getBufferedWriter(pathToPopulation.concat("_avgExec.txt"));
-		writer.write(avgExecScore.createResults());
-		writer.close();
-	}
+		String pathToConfig = args[1];
+		String path2HomesSHP = args[2];
 
-	public String createResults() {
-		double scoreSum = 0;
-		double numberOfAgents = 0;
-		for (Person person : population.getPersons().values()) {
-			if (!person.getId().toString().contains("pt") && Utils.hasHomeInArea(person, coordAnalyzer)) {
-				double score = person.getSelectedPlan().getScore();
-				if (score > -10000) {
-					scoreSum += score;
-					numberOfAgents++;
-				}
-			}
-		}
-		return "Average Exec Score: " + ScenarioAnalyzer.DEL + df.format(scoreSum/numberOfAgents) + ScenarioAnalyzer.NL;
+		Config config = ConfigUtils.loadConfig(pathToConfig);
+		Population population = PopulationUtils.readPopulation(pathToPopulation);
+		CoordAnalyzer coordAnalyzer = Utils.getCoordAnalyzer(path2HomesSHP);
+		double marginalUtilityOfMoney = config.planCalcScore().getMarginalUtilityOfMoney();
+
+		ExpectedMaximumUtility emu = new ExpectedMaximumUtility(population, marginalUtilityOfMoney, coordAnalyzer);
+		AvgExecScore aes = new AvgExecScore(population, coordAnalyzer);
+		String out = aes.createResults() + emu.createResults();
+
+		BufferedWriter writer = IOUtils.getBufferedWriter(pathToPopulation.concat("_analysis.txt"));
+		writer.write(out);
+		writer.close();
 	}
 
 }
