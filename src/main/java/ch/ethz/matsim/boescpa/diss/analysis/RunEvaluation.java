@@ -58,12 +58,11 @@ public class RunEvaluation {
 				+ header_VKM
 				+ header_PassengerKM
 				+ header_AnzPassengers
-				//+ header_Accessibility
-				//+ header_Profitability
-				//+ header_Welfares
+				+ header_PopStats
 				+ header_TimeUsage
 				+ header_AVFleetSizes;
 				//+ header_AVStats;
+				//+ header_Accessibility;
 		System.out.print(header + "\n");
 		this.writer.write(header);
 		this.writer.newLine();
@@ -109,12 +108,11 @@ public class RunEvaluation {
 			output = output.concat(getVKT(pathToRunFolder, runId));
 			output = output.concat(getPassengerKM(pathToRunFolder, runId));
 			output = output.concat(getAnzPassengers(pathToRunFolder, runId));
-			//output = output.concat(getAccessibilities(pathToRunFolder, runId));
-			//output = output.concat(getProfitabilities(pathToRunFolder, runId));
-			//output = output.concat(getWelfares(pathToRunFolder, runId));
+			output = output.concat(getPopStats(pathToRunFolder, runId));
 			output = output.concat(getTimeUsages(pathToRunFolder, runId));
 			output = output.concat(getAVFleetSizes(pathToRunFolder, runId));
 			//output = output.concat(getAVStats(pathToRunFolder, runId));
+			//output = output.concat(getAccessibilities(pathToRunFolder, runId));
 			// ****************************
 			// add more information here...
 			// ****************************
@@ -129,6 +127,68 @@ public class RunEvaluation {
 	private String getAVStats(String pathToRunFolder, String runId) {
 		//int fleetSize = getFleetSize(pathToRunFolder + File.separator + runId + )
 		return "";
+	}*/
+
+	/*private static final String header_Accessibility = DEL + "access_total_pt" + DEL + "access_total_av" +
+			DEL + "access_total_car" + DEL + "access_peak_pt" + DEL + "access_peak_av" + DEL + "access_peak_car" +
+			DEL + "access_offpeak_pt" + DEL + "access_offpeak_av" + DEL + "access_offpeak_car";
+
+	private String getAccessibilities(String pathToRunFolder, String runId) throws IOException {
+		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
+				+ runId + ".output_events.xml.gz_analysisResultsTargetFunction.csv");
+		String line = reader.readLine();
+		while (!line.contains("accessibilities")) line = reader.readLine();
+		reader.readLine(); line = reader.readLine();
+		int numberOfEmptyLines = 0;
+		Map<String, String> valsFound = new HashMap<>();
+		while(numberOfEmptyLines < 5 && line != null) {
+			if (line.equals("")) {
+				numberOfEmptyLines++;
+				line = reader.readLine();
+				continue;
+			}
+			String[] lineElements = line.split("; ");
+			switch (lineElements[0].trim()) {
+				case "pt":
+					if (numberOfEmptyLines < 1) {
+						valsFound.put("pt_total", lineElements[1]);
+					} else if (numberOfEmptyLines < 3) {
+						valsFound.put("pt_peak", lineElements[1]);
+					} else {
+						valsFound.put("pt_offpeak", lineElements[1]);
+					}
+					break;
+				case "av":
+					if (numberOfEmptyLines < 1) {
+						valsFound.put("av_total", lineElements[1]);
+					} else if (numberOfEmptyLines < 3) {
+						valsFound.put("av_peak", lineElements[1]);
+					} else {
+						valsFound.put("av_offpeak", lineElements[1]);
+					}
+					break;
+				case "car":
+					if (numberOfEmptyLines < 1) {
+						valsFound.put("car_total", lineElements[1]);
+					} else if (numberOfEmptyLines < 3) {
+						valsFound.put("car_peak", lineElements[1]);
+					} else {
+						valsFound.put("car_offpeak", lineElements[1]);
+					}
+					break;
+			}
+			line = reader.readLine();
+		}
+		String out = valsFound.containsKey("pt_total") ? DEL + valsFound.get("pt_total") : DEL + 0;
+		out = valsFound.containsKey("av_total") ? out + DEL + valsFound.get("av_total") : out + DEL + 0;
+		out = valsFound.containsKey("car_total") ? out + DEL + valsFound.get("car_total") : out + DEL + 0;
+		out = valsFound.containsKey("pt_peak") ? out + DEL + valsFound.get("pt_peak") : out + DEL + 0;
+		out = valsFound.containsKey("av_peak") ? out + DEL + valsFound.get("av_peak") : out + DEL + 0;
+		out = valsFound.containsKey("car_peak") ? out + DEL + valsFound.get("car_peak") : out + DEL + 0;
+		out = valsFound.containsKey("pt_offpeak") ? out + DEL + valsFound.get("pt_offpeak") : out + DEL + 0;
+		out = valsFound.containsKey("av_offpeak") ? out + DEL + valsFound.get("av_offpeak") : out + DEL + 0;
+		out = valsFound.containsKey("car_offpeak") ? out + DEL + valsFound.get("car_offpeak") : out + DEL + 0;
+		return out;
 	}*/
 
 	private static final String header_AVFleetSizes = DEL + "FleetSize_aTaxi" +
@@ -197,66 +257,16 @@ public class RunEvaluation {
 		return out;
 	}
 
-	private static final String header_Accessibility = DEL + "access_total_pt" + DEL + "access_total_av" +
-			DEL + "access_total_car" + DEL + "access_peak_pt" + DEL + "access_peak_av" + DEL + "access_peak_car" +
-			DEL + "access_offpeak_pt" + DEL + "access_offpeak_av" + DEL + "access_offpeak_car";
+	private static final String header_PopStats = DEL + "AverageExecScore" + DEL + "ExpectedMaximumUtilityPop";
 
-	private String getAccessibilities(String pathToRunFolder, String runId) throws IOException {
+	private String getPopStats(String pathToRunFolder, String runId) throws IOException {
 		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
-				+ runId + ".output_events.xml.gz_analysisResultsTargetFunction.csv");
-		String line = reader.readLine();
-		while (!line.contains("accessibilities")) line = reader.readLine();
-		reader.readLine(); line = reader.readLine();
-		int numberOfEmptyLines = 0;
-		Map<String, String> valsFound = new HashMap<>();
-		while(numberOfEmptyLines < 5 && line != null) {
-			if (line.equals("")) {
-				numberOfEmptyLines++;
-				line = reader.readLine();
-				continue;
-			}
-			String[] lineElements = line.split("; ");
-			switch (lineElements[0].trim()) {
-				case "pt":
-					if (numberOfEmptyLines < 1) {
-						valsFound.put("pt_total", lineElements[1]);
-					} else if (numberOfEmptyLines < 3) {
-						valsFound.put("pt_peak", lineElements[1]);
-					} else {
-						valsFound.put("pt_offpeak", lineElements[1]);
-					}
-					break;
-				case "av":
-					if (numberOfEmptyLines < 1) {
-						valsFound.put("av_total", lineElements[1]);
-					} else if (numberOfEmptyLines < 3) {
-						valsFound.put("av_peak", lineElements[1]);
-					} else {
-						valsFound.put("av_offpeak", lineElements[1]);
-					}
-					break;
-				case "car":
-					if (numberOfEmptyLines < 1) {
-						valsFound.put("car_total", lineElements[1]);
-					} else if (numberOfEmptyLines < 3) {
-						valsFound.put("car_peak", lineElements[1]);
-					} else {
-						valsFound.put("car_offpeak", lineElements[1]);
-					}
-					break;
-			}
-			line = reader.readLine();
-		}
-		String out = valsFound.containsKey("pt_total") ? DEL + valsFound.get("pt_total") : DEL + 0;
-		out = valsFound.containsKey("av_total") ? out + DEL + valsFound.get("av_total") : out + DEL + 0;
-		out = valsFound.containsKey("car_total") ? out + DEL + valsFound.get("car_total") : out + DEL + 0;
-		out = valsFound.containsKey("pt_peak") ? out + DEL + valsFound.get("pt_peak") : out + DEL + 0;
-		out = valsFound.containsKey("av_peak") ? out + DEL + valsFound.get("av_peak") : out + DEL + 0;
-		out = valsFound.containsKey("car_peak") ? out + DEL + valsFound.get("car_peak") : out + DEL + 0;
-		out = valsFound.containsKey("pt_offpeak") ? out + DEL + valsFound.get("pt_offpeak") : out + DEL + 0;
-		out = valsFound.containsKey("av_offpeak") ? out + DEL + valsFound.get("av_offpeak") : out + DEL + 0;
-		out = valsFound.containsKey("car_offpeak") ? out + DEL + valsFound.get("car_offpeak") : out + DEL + 0;
-		return out;
+				+ runId + ".output_plans.xml.gz_avgExec.txt");
+		String averageExecScore = reader.readLine().split(";")[1];
+		reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
+				+ runId + ".output_plans.xml.gz_EMU.txt");
+		String emu = reader.readLine().split(";")[1];
+		return DEL + averageExecScore + DEL + emu;
 	}
 
 	private static final String header_AnzPassengers = DEL + "AnzPass_ptBus" + DEL + "AnzPass_ptOther" + DEL + "AnzPass_aTaxi" +
