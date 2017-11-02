@@ -102,11 +102,11 @@ public class RunEvaluation {
 			String runId = pathToRunFolder.substring(pathToRunFolder.lastIndexOf("output_") + 7);
 			String output = runId;
 			output = output.concat(getSimType(runId));
+			output = output.concat(getPopStats(pathToRunFolder, runId));
 			output = output.concat(getAnalysisResults(pathToRunFolder, runId));
 			output = output.concat(getVKT(pathToRunFolder, runId));
 			output = output.concat(getPassengerKM(pathToRunFolder, runId));
 			output = output.concat(getAnzPassengers(pathToRunFolder, runId));
-			output = output.concat(getPopStats(pathToRunFolder, runId));
 			output = output.concat(getTimeUsages(pathToRunFolder, runId));
 			output = output.concat(getAVFleetSizes(pathToRunFolder, runId));
 			//output = output.concat(getAVStats(pathToRunFolder, runId));
