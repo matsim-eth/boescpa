@@ -20,19 +20,24 @@
 
 package ch.ethz.matsim.boescpa.lib.tools.coordUtils;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import ch.ethz.matsim.boescpa.lib.tools.utils.SHPFileUtils;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Node;
+import org.matsim.core.utils.gis.ShapeFileReader;
 import org.matsim.facilities.Facility;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
+import org.opengis.feature.simple.SimpleFeature;
 
 // copy from christoph-playground
 public class CoordAnalyzer {
@@ -42,7 +47,7 @@ public class CoordAnalyzer {
 	private final Map<Id, Boolean> nodeCache;
 	private final Map<Id, Boolean> linkCache;
 	private final Map<Id, Boolean> facilityCache;
-	
+
 	public CoordAnalyzer(Geometry affectedArea) {
 		this.affectedArea = affectedArea;
 		
@@ -58,6 +63,14 @@ public class CoordAnalyzer {
 		this.nodeCache = nodeCache;
 		this.linkCache = linkCache;
 		this.facilityCache = facilityCache;
+	}
+
+	public static CoordAnalyzer getCoordAnalyzer(String path2SHP) {
+		Set<SimpleFeature> features = new HashSet<>();
+		SHPFileUtils util = new SHPFileUtils();
+		features.addAll(ShapeFileReader.getAllFeatures(path2SHP));
+		Geometry area = util.mergeGeometries(features);
+		return new CoordAnalyzer(area);
 	}
 	
 	/*

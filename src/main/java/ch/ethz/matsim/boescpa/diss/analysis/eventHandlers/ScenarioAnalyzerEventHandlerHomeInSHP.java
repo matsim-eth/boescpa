@@ -57,11 +57,7 @@ public abstract class ScenarioAnalyzerEventHandlerHomeInSHP extends ScenarioAnal
 		super();
 		this.population = population;
 		// load SHP with homes
-		Set<SimpleFeature> features = new HashSet<>();
-		SHPFileUtils util = new SHPFileUtils();
-		features.addAll(ShapeFileReader.getAllFeatures(pathToHomesSHP));
-		Geometry area = util.mergeGeometries(features);
-		coordAnalyzer = new CoordAnalyzer(area);
+		coordAnalyzer = CoordAnalyzer.getCoordAnalyzer(pathToHomesSHP);
 	}
 
     public static void setAnalysisEndTime(int endTimeInSeconds) {
