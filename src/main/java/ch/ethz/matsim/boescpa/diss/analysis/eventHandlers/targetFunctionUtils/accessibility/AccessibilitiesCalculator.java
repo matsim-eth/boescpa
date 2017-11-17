@@ -19,7 +19,7 @@
  * *********************************************************************** *
  */
 
-package ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.targetFunctionUtils;
+package ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.targetFunctionUtils.accessibility;
 
 import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.TargetFunctionEvaluator;
 import org.matsim.api.core.v01.Id;

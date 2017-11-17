@@ -22,7 +22,7 @@
 package ch.ethz.matsim.boescpa.diss.analysis.eventHandlers;
 
 import ch.ethz.matsim.boescpa.analysis.spatialCutters.SpatialCutter;
-import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.targetFunctionUtils.AccessibilitiesCalculator;
+import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.targetFunctionUtils.accessibility.AccessibilitiesCalculator;
 import ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.targetFunctionUtils.KilometerCounter;
 import org.matsim.api.core.v01.events.*;
 import org.matsim.api.core.v01.events.handler.*;
