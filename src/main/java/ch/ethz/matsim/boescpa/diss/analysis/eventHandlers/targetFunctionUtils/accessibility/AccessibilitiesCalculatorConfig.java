@@ -35,6 +35,7 @@ import java.util.List;
  *
  * @author boescpa
  */
+@Deprecated
 public class AccessibilitiesCalculatorConfig extends ReflectiveConfigGroup {
 	final static String ACCESSIBILITY_CALCULATOR = "accessibilityCalculator";
 

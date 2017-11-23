@@ -43,6 +43,7 @@ import static java.util.Objects.isNull;
  *
  * @author boescpa
  */
+@Deprecated
 public class AccessibilityClusters {
 
 	private static final double GRID_CELL_SIZE = 100;

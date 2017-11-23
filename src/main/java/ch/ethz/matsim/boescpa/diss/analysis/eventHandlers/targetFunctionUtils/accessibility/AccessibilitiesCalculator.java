@@ -50,6 +50,7 @@ import static ch.ethz.matsim.boescpa.analysis.scenarioAnalyzer.ScenarioAnalyzer.
  *
  * @author boescpa
  */
+@Deprecated
 public class AccessibilitiesCalculator implements PersonDepartureEventHandler, PersonArrivalEventHandler{
 	private final TargetFunctionEvaluator targetFunctionEvaluator;
 	private final Network network;
