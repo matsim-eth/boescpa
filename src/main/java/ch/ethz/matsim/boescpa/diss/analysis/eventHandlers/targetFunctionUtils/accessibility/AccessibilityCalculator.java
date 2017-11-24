@@ -45,10 +45,23 @@ import java.util.Map;
  * @author boescpa
  */
 public class AccessibilityCalculator {
-	private final static double GridCellSize = 1000; // meters
+	private final static double GridCellSize = 500; // meters
 	private final static String[] OpportunityActivities = {"work","home","leisure","shop","education"};
-	private final static String[] AnalyzedModes = {"car","pt","av"};
-	private final static double[] ModeDeterrenceBetas = {0.2613, 0.0344, 0.0344};
+	private final static String[] AnalyzedModes = {"car","pt","av","sm"};
+	private final static double[] ModeDeterrenceBetas = {0.2613, 0.2613, 0.2613, 0.2613};
+	// source betas:
+	/*
+	Axhausen, K.W., T. Bischof, R. Fuhrer, R. Neuenschwander, G. Sarlas, und P. Walker (2015):
+	Gesamtwirtschaftliche Effekte des öffentlichen Verkehrs mit besonderer Berücksichtigung der Verdichtungs-
+	und Agglomerationseffekte, Schlussbericht, SBB Fonds für Forschung, Bern und Zürich.
+	********************************************************************************************************
+	Personal communication G. Sarlas, 24.11.2017: Best would be to estimate new betas. Next best:
+		- Beta for car (0.2613) was estimated based on travel times
+		- Beta for pt (0.0344) was estimated based on generalized costs
+			=> Use car-beta for all modes if accessibility calculation based on travel times,
+				use pt-beta for all modes if accessibility calculation based on generalized costs.
+	 */
+	// todo-boescpa: Estimate parameters for mode based on observed travel times as part of accessibility calculation
 	private final static double[] DayTimes = {7.5*3600, 10*3600, 3*3600}; // peak, offpeak, night
 
 	private final Network network;
@@ -85,10 +98,12 @@ public class AccessibilityCalculator {
 
 	private void writeAverageAccessibilities(Map<String, Map<String, Double>> averageAccessibilities, String outputPath) throws IOException {
 		BufferedWriter writer = IOUtils.getBufferedWriter(outputPath);
-		writer.write("daytime;mode;averageAccessibility"); writer.newLine();
+		writer.write("daytime;mode;averageAccessibility");
+		writer.newLine();
 		for (String daytime : averageAccessibilities.keySet()) {
 			for (String mode : AnalyzedModes) {
 				writer.write(daytime + ";" + mode + ";" + String.valueOf(averageAccessibilities.get(daytime).get(mode)));
+				writer.newLine();
 			}
 		}
 		writer.flush();
@@ -128,10 +143,11 @@ public class AccessibilityCalculator {
 		for (String fromZone : opportunities.keySet()) {
 			zoneCounter++;
 			if ((zoneCounter/opportunities.keySet().size()) > zoneCounterTrigger) {
-				System.out.println("Zones calculated: " + zoneCounterTrigger);
+				System.out.println("Zones calculated: " + (int)(100*zoneCounterTrigger) + "%");
 				zoneCounterTrigger += 0.1;
 			}
 			for (String toZone : opportunities.keySet()) {
+				if (fromZone.equals(toZone)) continue;
 				for (double dayTime : DayTimes) {
 					Map<String, Double> travelTimes = router.getCoordToCoordTravelTime(
 							getCentroidCoord(fromZone), getCentroidCoord(toZone), dayTime);
@@ -156,7 +172,7 @@ public class AccessibilityCalculator {
 						double accessibility = accessibilities.getOrDefault(fromZone, opportunities.get(fromZone));
 							// We calculate the accessibility and add it to the total accessibility of this origin.
 						// todo-boescpa: Wechsel von travel time zu generalisierten Kosten, d.h. "modeConstant + travelTime * VOT_mode + travelDistance * CostPerKM_mode"
-						accessibility += opportunities.get(toZone) * Math.exp(-modeBeta * travelTime);
+						accessibility += opportunities.get(toZone) * Math.exp(-modeBeta * (travelTime/60));
 						accessibilities.put(fromZone, accessibility);
 					}
 				}

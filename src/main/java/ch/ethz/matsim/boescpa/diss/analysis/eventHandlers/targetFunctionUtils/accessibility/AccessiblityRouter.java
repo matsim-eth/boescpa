@@ -75,6 +75,7 @@ public class AccessiblityRouter {
 	private final PTTravelTimeCalculator ptTravelTimeCalculator;
 	private final CarTravelTimeCalculator carTravelTimeCalculator;
 	private final AVTravelTimeCalculator avTravelTimeCalculator;
+	private final SMTravelTimeCalculator smTravelTimeCalculator;
 
 	AccessiblityRouter(Config config, String path2Events, String path2CommunitiesSHP) {
 		Scenario scenario = ScenarioUtils.createScenario(config);
@@ -84,14 +85,10 @@ public class AccessiblityRouter {
 		new MatsimNetworkReader(scenario.getNetwork()).readFile(scenario.getConfig().network().getInputFile());
 		new TransitScheduleReader(scenario).readFile(scenario.getConfig().transit().getTransitScheduleFile());
 
-		// Car travel times
 		this.carTravelTimeCalculator = new CarTravelTimeCalculator(scenario);
-
-		// AV travel times
 		this.avTravelTimeCalculator = new AVTravelTimeCalculator(scenario, path2CommunitiesSHP, carTravelTimeCalculator);
-
-		// PT travel times
 		this.ptTravelTimeCalculator = new PTTravelTimeCalculator(scenario);
+		this.smTravelTimeCalculator = new SMTravelTimeCalculator(scenario);
 
 		loadEvents(path2Events);
 	}
@@ -101,6 +98,7 @@ public class AccessiblityRouter {
 		EventsManager eventsManager = EventsUtils.createEventsManager();
 		eventsManager.addHandler(this.carTravelTimeCalculator);
 		eventsManager.addHandler(this.avTravelTimeCalculator);
+		eventsManager.addHandler(this.smTravelTimeCalculator);
 		MatsimEventsReader reader = new MatsimEventsReader(eventsManager);
 		reader.readFile(path2Events);
 	}
@@ -111,6 +109,7 @@ public class AccessiblityRouter {
 		linkToLinkTravelTime.put("pt", this.ptTravelTimeCalculator.getLinkToLinkTravelTime(fromLinkId, toLinkId, time));
 		linkToLinkTravelTime.put("av", linkToLinkTravelTime.get("car") > 0 ?
 				this.avTravelTimeCalculator.getOverhead(fromLinkId, time) + linkToLinkTravelTime.get("car"): 0);
+		linkToLinkTravelTime.put("sm", this.smTravelTimeCalculator.getLinkToLinkTravelTime(fromLinkId, toLinkId, time));
 		return linkToLinkTravelTime;
 	}
 
@@ -120,6 +119,7 @@ public class AccessiblityRouter {
 		coordToCoordTravelTimes.put("pt", this.ptTravelTimeCalculator.getCoordToCoordTravelTime(fromCoord, toCoord, time));
 		coordToCoordTravelTimes.put("av", coordToCoordTravelTimes.get("car") > 0 ?
 				this.avTravelTimeCalculator.getOverhead(fromCoord, time) + coordToCoordTravelTimes.get("car"): 0);
+		coordToCoordTravelTimes.put("sm", this.smTravelTimeCalculator.getCoordToCoordTravelTime(fromCoord, toCoord, time));
 		return coordToCoordTravelTimes;
 	}
 
@@ -188,6 +188,56 @@ public class AccessiblityRouter {
 	}
 
 	//###############################################################################################################
+
+	private class SMTravelTimeCalculator implements PersonDepartureEventHandler {
+		private final Network network;
+		private final Double beelineDistanceFactor_bike;
+		private final Double beelineDistanceFactor_walk;
+		private final Double teleportedModeSpeed_bike;
+		private final Double teleportedModeSpeed_walk;
+		private double numberOfTrips_bike = 0.001; // to avoid division by zero
+		private double numberOfTrips_walk = 0.001; // to avoid division by zero
+
+		SMTravelTimeCalculator(Scenario scenario) {
+			this.network = scenario.getNetwork();
+			this.beelineDistanceFactor_bike = scenario.getConfig().plansCalcRoute().getBeelineDistanceFactors().get("bike");
+			this.beelineDistanceFactor_walk = scenario.getConfig().plansCalcRoute().getBeelineDistanceFactors().get("walk");
+			this.teleportedModeSpeed_bike = scenario.getConfig().plansCalcRoute().getTeleportedModeSpeeds().get("bike");
+			this.teleportedModeSpeed_walk = scenario.getConfig().plansCalcRoute().getTeleportedModeSpeeds().get("walk");
+		}
+
+		private double getBeelineDistanceFactor() {
+			return ((numberOfTrips_bike * beelineDistanceFactor_bike) + (numberOfTrips_walk * beelineDistanceFactor_walk)) /
+					(numberOfTrips_bike + numberOfTrips_walk);
+		}
+
+		private double getTeleportedModeSpeed() {
+			return ((numberOfTrips_bike * teleportedModeSpeed_bike) + (numberOfTrips_walk * teleportedModeSpeed_walk)) /
+					(numberOfTrips_bike + numberOfTrips_walk);
+		}
+
+		double getLinkToLinkTravelTime(Id<Link> fromLinkId, Id<Link> toLinkId, double time) {
+			return getCoordToCoordTravelTime(
+					this.network.getLinks().get(fromLinkId).getFromNode().getCoord(),
+					this.network.getLinks().get(toLinkId).getToNode().getCoord(), time);
+		}
+
+		double getCoordToCoordTravelTime(Coord fromCoord, Coord toCoord, double time) {
+			double beelineDistance = NetworkUtils.getEuclideanDistance(fromCoord, toCoord);
+			return (beelineDistance * getBeelineDistanceFactor()) / getTeleportedModeSpeed();
+		}
+
+		@Override
+		public void handleEvent(PersonDepartureEvent personDepartureEvent) {
+			switch (personDepartureEvent.getLegMode()) {
+				case "bike": numberOfTrips_bike++; break;
+				case "walk": numberOfTrips_walk++; break;
+			}
+		}
+
+		@Override
+		public void reset(int i) {}
+	}
 
 	private class AVTravelTimeCalculator implements PersonDepartureEventHandler, PersonEntersVehicleEventHandler, ActivityEndEventHandler {
 		private final Map<String, Geometry> zones;
