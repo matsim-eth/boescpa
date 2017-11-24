@@ -22,14 +22,20 @@
 package ch.ethz.matsim.boescpa.diss.analysis.eventHandlers.targetFunctionUtils.accessibility;
 
 import ch.ethz.matsim.boescpa.lib.tools.coordUtils.CoordAnalyzer;
+import ch.ethz.matsim.boescpa.lib.tools.utils.FacilityUtils;
+import ch.ethz.matsim.boescpa.lib.tools.utils.NetworkUtils;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
+import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.utils.io.IOUtils;
 import org.matsim.facilities.ActivityFacilities;
 import org.matsim.facilities.ActivityFacility;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,8 +45,7 @@ import java.util.Map;
  * @author boescpa
  */
 public class AccessibilityCalculator {
-
-	private final static double GridCellSize = 100; // meters
+	private final static double GridCellSize = 1000; // meters
 	private final static String[] OpportunityActivities = {"work","home","leisure","shop","education"};
 	private final static String[] AnalyzedModes = {"car","pt","av"};
 	private final static double[] ModeDeterrenceBetas = {0.2613, 0.0344, 0.0344};
@@ -59,9 +64,73 @@ public class AccessibilityCalculator {
 		this.router = accessiblityRouter;
 	}
 
-	private Map<String,Map<String, Map<String, Double>>> calculateAccessibilities() {
+	public static void main(final String[] args) throws IOException {
+		String path2Config = args[0];
+		String path2Events = args[1];
+		String path2Network = args[2];
+		String path2Facilities = args[3];
+		String path2SHP = args[4];
+		String outputPath = args[5];
+
+		Network network = NetworkUtils.readNetwork(path2Network);
+		ActivityFacilities facilities = FacilityUtils.readFacilities(path2Facilities);
+		AccessiblityRouter router = new AccessiblityRouter(ConfigUtils.loadConfig(path2Config), path2Events, path2SHP);
+		AccessibilityCalculator calculator = new AccessibilityCalculator(network, facilities, path2SHP, router);
+
+		Map<String,Map<String, Map<String, Double>>> totalAccessibilities = calculator.calculateTotalAccessibilities();
+		Map<String, Map<String, Double>> averageAccessibilities =
+				calculator.calculateOpportunityWeightedAverageAccessibilities(totalAccessibilities);
+		calculator.writeAverageAccessibilities(averageAccessibilities, outputPath);
+	}
+
+	private void writeAverageAccessibilities(Map<String, Map<String, Double>> averageAccessibilities, String outputPath) throws IOException {
+		BufferedWriter writer = IOUtils.getBufferedWriter(outputPath);
+		writer.write("daytime;mode;averageAccessibility"); writer.newLine();
+		for (String daytime : averageAccessibilities.keySet()) {
+			for (String mode : AnalyzedModes) {
+				writer.write(daytime + ";" + mode + ";" + String.valueOf(averageAccessibilities.get(daytime).get(mode)));
+			}
+		}
+		writer.flush();
+		writer.close();
+	}
+
+	// meaning of the strings:
+	//  1. daytime (peak, offpeak, night)
+	//  2. mode (AnalyzedModes)
+	private Map<String, Map<String, Double>> calculateOpportunityWeightedAverageAccessibilities(
+			Map<String,Map<String, Map<String, Double>>> totalAccessibilities) {
+		Map<String, Map<String, Double>> averageAccessibilities = new HashMap<>();
+		for (String daytime : totalAccessibilities.keySet()) {
+			for (String mode : AnalyzedModes) {
+				double totalAccessibility = 0;
+				double numberOfOpportunities = 0;
+				for (String zone : opportunities.keySet()) {
+					totalAccessibility += totalAccessibilities.get(daytime).get(mode).get(zone) * opportunities.get(zone);
+					numberOfOpportunities += opportunities.get(zone);
+				}
+				Map<String, Double> modeAccessibilities = averageAccessibilities.getOrDefault(daytime, new HashMap<>());
+				modeAccessibilities.put(mode, totalAccessibility/numberOfOpportunities);
+				averageAccessibilities.put(daytime, modeAccessibilities);
+			}
+		}
+		return averageAccessibilities;
+	}
+
+	// meaning of the strings:
+	//  1. daytime (peak, offpeak, night)
+	//  2. mode (AnalyzedModes)
+	//  3. zone
+	private Map<String,Map<String, Map<String, Double>>> calculateTotalAccessibilities() {
 		Map<String, Map<String, Map<String, Double>>> accessibilitiesTotal = createAccessibilitiesTree();
+		double zoneCounter = 0;
+		double zoneCounterTrigger = 0;
 		for (String fromZone : opportunities.keySet()) {
+			zoneCounter++;
+			if ((zoneCounter/opportunities.keySet().size()) > zoneCounterTrigger) {
+				System.out.println("Zones calculated: " + zoneCounterTrigger);
+				zoneCounterTrigger += 0.1;
+			}
 			for (String toZone : opportunities.keySet()) {
 				for (double dayTime : DayTimes) {
 					Map<String, Double> travelTimes = router.getCoordToCoordTravelTime(
@@ -86,6 +155,7 @@ public class AccessibilityCalculator {
 							// we take its self-accessibility, which is all its own opportunities.
 						double accessibility = accessibilities.getOrDefault(fromZone, opportunities.get(fromZone));
 							// We calculate the accessibility and add it to the total accessibility of this origin.
+						// todo-boescpa: Wechsel von travel time zu generalisierten Kosten, d.h. "modeConstant + travelTime * VOT_mode + travelDistance * CostPerKM_mode"
 						accessibility += opportunities.get(toZone) * Math.exp(-modeBeta * travelTime);
 						accessibilities.put(fromZone, accessibility);
 					}

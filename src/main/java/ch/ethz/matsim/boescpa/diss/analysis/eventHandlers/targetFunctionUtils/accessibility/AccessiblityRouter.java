@@ -109,7 +109,8 @@ public class AccessiblityRouter {
 		Map<String, Double> linkToLinkTravelTime = new LinkedHashMap<>(3);
 		linkToLinkTravelTime.put("car", this.carTravelTimeCalculator.getLinkToLinkTravelTime(fromLinkId, toLinkId, time));
 		linkToLinkTravelTime.put("pt", this.ptTravelTimeCalculator.getLinkToLinkTravelTime(fromLinkId, toLinkId, time));
-		linkToLinkTravelTime.put("av", this.avTravelTimeCalculator.getLinkToLinkTravelTime(fromLinkId, toLinkId, time));
+		linkToLinkTravelTime.put("av", linkToLinkTravelTime.get("car") > 0 ?
+				this.avTravelTimeCalculator.getOverhead(fromLinkId, time) + linkToLinkTravelTime.get("car"): 0);
 		return linkToLinkTravelTime;
 	}
 
@@ -117,7 +118,8 @@ public class AccessiblityRouter {
 		Map<String, Double> coordToCoordTravelTimes = new LinkedHashMap<>(3);
 		coordToCoordTravelTimes.put("car", this.carTravelTimeCalculator.getCoordToCoordTravelTime(fromCoord, toCoord, time));
 		coordToCoordTravelTimes.put("pt", this.ptTravelTimeCalculator.getCoordToCoordTravelTime(fromCoord, toCoord, time));
-		coordToCoordTravelTimes.put("av", this.avTravelTimeCalculator.getCoordToCoordTravelTime(fromCoord, toCoord, time));
+		coordToCoordTravelTimes.put("av", coordToCoordTravelTimes.get("car") > 0 ?
+				this.avTravelTimeCalculator.getOverhead(fromCoord, time) + coordToCoordTravelTimes.get("car"): 0);
 		return coordToCoordTravelTimes;
 	}
 
@@ -206,8 +208,17 @@ public class AccessiblityRouter {
 			this.carTravelTimeCalculator = carTravelTimeCalculator;
 		}
 
-		double getCoordToCoordTravelTime(Coord fromCoord, Coord toCoord, double time) {
+		double getOverhead(Coord fromCoord, double time) {
 			String zone = getZone(fromCoord);
+			return getOverhead(zone, time);
+		}
+
+		double getOverhead(Id<Link> fromLinkId, double time) {
+			String zone = getZone(network.getLinks().get(fromLinkId).getCoord());
+			return getOverhead(zone, time);
+		}
+
+		double getOverhead(String zone, double time) {
 			String dayTime = getTime(time);
 			double waitTimeAV;
 			switch (dayTime) {
@@ -219,23 +230,17 @@ public class AccessiblityRouter {
 						averageWaitingTimeZoneNight.get(zone).getFirst() : 0; break;
 				default: throw new RuntimeException("Undefined day time: " + dayTime);
 			}
+			return waitTimeAV;
+		}
+
+		double getCoordToCoordTravelTime(Coord fromCoord, Coord toCoord, double time) {
+			double waitTimeAV = getOverhead(fromCoord, time);
 			double driveTimeAV = carTravelTimeCalculator.getCoordToCoordTravelTime(fromCoord, toCoord, time);
 			return driveTimeAV > 0 ? waitTimeAV + driveTimeAV : 0;
 		}
 
 		double getLinkToLinkTravelTime(Id<Link> fromLinkId, Id<Link> toLinkId, double time) {
-			String zone = getZone(network.getLinks().get(fromLinkId).getCoord());
-			String dayTime = getTime(time);
-			double waitTimeAV;
-			switch (dayTime) {
-				case "peak": waitTimeAV = zone != null && averageWaitingTimeZonePeak.containsKey(zone) ?
-						averageWaitingTimeZonePeak.get(zone).getFirst() : 0; break;
-				case "offpeak": waitTimeAV = zone != null && averageWaitingTimeZoneOffPeak.containsKey(zone) ?
-						averageWaitingTimeZoneOffPeak.get(zone).getFirst() : 0; break;
-				case "night": waitTimeAV = zone != null && averageWaitingTimeZoneNight.containsKey(zone) ?
-						averageWaitingTimeZoneNight.get(zone).getFirst() : 0; break;
-				default: throw new RuntimeException("Undefined day time: " + dayTime);
-			}
+			double waitTimeAV = getOverhead(fromLinkId, time);
 			double driveTimeAV = carTravelTimeCalculator.getLinkToLinkTravelTime(fromLinkId, toLinkId, time);
 			return driveTimeAV > 0 ? waitTimeAV + driveTimeAV : 0;
 		}
