@@ -40,9 +40,11 @@ import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.core.api.experimental.events.EventsManager;
+import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.events.EventsUtils;
 import org.matsim.core.events.MatsimEventsReader;
+import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.network.io.MatsimNetworkReader;
 import org.matsim.core.router.costcalculators.RandomizingTimeDistanceTravelDisutilityFactory;
 import org.matsim.core.router.util.FastAStarLandmarksFactory;
@@ -68,32 +70,28 @@ import java.util.Map;
  *
  * @author boescpa
  */
-public class AccessiblitiesRouter {
+public class AccessiblityRouter {
 
 	private final PTTravelTimeCalculator ptTravelTimeCalculator;
 	private final CarTravelTimeCalculator carTravelTimeCalculator;
 	private final AVTravelTimeCalculator avTravelTimeCalculator;
 
-	public AccessiblitiesRouter(final String[] args) {
-		String path2Config = args[0];
-		String path2Events = args[1];
-		String path2CommunitiesSHP = args[2];
-
-		Scenario scenario = ScenarioUtils.createScenario(ConfigUtils.loadConfig(path2Config));
+	AccessiblityRouter(Config config, String path2Events, String path2CommunitiesSHP) {
+		Scenario scenario = ScenarioUtils.createScenario(config);
 		scenario.getConfig().travelTimeCalculator().setCalculateLinkToLinkTravelTimes(true);
 
-		// Car travel times
+		// Load required scenario elements
 		new MatsimNetworkReader(scenario.getNetwork()).readFile(scenario.getConfig().network().getInputFile());
+		new TransitScheduleReader(scenario).readFile(scenario.getConfig().transit().getTransitScheduleFile());
+
+		// Car travel times
 		this.carTravelTimeCalculator = new CarTravelTimeCalculator(scenario);
-		//carTravelTimeCalculator.getLinkToLinkTravelTime()
 
 		// AV travel times
 		this.avTravelTimeCalculator = new AVTravelTimeCalculator(scenario, path2CommunitiesSHP, carTravelTimeCalculator);
 
 		// PT travel times
-		new TransitScheduleReader(scenario).readFile(scenario.getConfig().transit().getTransitScheduleFile());
 		this.ptTravelTimeCalculator = new PTTravelTimeCalculator(scenario);
-		//ptTravelTimeCalculator.getLinkToLinkTravelTime()
 
 		loadEvents(path2Events);
 	}
@@ -115,8 +113,21 @@ public class AccessiblitiesRouter {
 		return linkToLinkTravelTime;
 	}
 
+	public Map<String, Double> getCoordToCoordTravelTime(Coord fromCoord, Coord toCoord, double time) {
+		Map<String, Double> coordToCoordTravelTimes = new LinkedHashMap<>(3);
+		coordToCoordTravelTimes.put("car", this.carTravelTimeCalculator.getCoordToCoordTravelTime(fromCoord, toCoord, time));
+		coordToCoordTravelTimes.put("pt", this.ptTravelTimeCalculator.getCoordToCoordTravelTime(fromCoord, toCoord, time));
+		coordToCoordTravelTimes.put("av", this.avTravelTimeCalculator.getCoordToCoordTravelTime(fromCoord, toCoord, time));
+		return coordToCoordTravelTimes;
+	}
+
 	public static void main(final String[] args) {
-		AccessiblitiesRouter accessiblitiesRouter = new AccessiblitiesRouter(args);
+		String path2Config = args[0];
+		String path2Events = args[1];
+		String path2CommunitiesSHP = args[2];
+
+		AccessiblityRouter accessiblitiesRouter = new AccessiblityRouter(
+				ConfigUtils.loadConfig(path2Config), path2Events, path2CommunitiesSHP);
 
 		Id<Link> fromLink = Id.createLinkId(854574);
 		Id<Link> toLink = Id.createLinkId(346880);
@@ -195,19 +206,35 @@ public class AccessiblitiesRouter {
 			this.carTravelTimeCalculator = carTravelTimeCalculator;
 		}
 
-		public double getLinkToLinkTravelTime(Id<Link> fromLinkId, Id<Link> toLinkId, double time) {
+		double getCoordToCoordTravelTime(Coord fromCoord, Coord toCoord, double time) {
+			String zone = getZone(fromCoord);
+			String dayTime = getTime(time);
+			double waitTimeAV;
+			switch (dayTime) {
+				case "peak": waitTimeAV = zone != null && averageWaitingTimeZonePeak.containsKey(zone) ?
+						averageWaitingTimeZonePeak.get(zone).getFirst() : 0; break;
+				case "offpeak": waitTimeAV = zone != null && averageWaitingTimeZoneOffPeak.containsKey(zone) ?
+						averageWaitingTimeZoneOffPeak.get(zone).getFirst() : 0; break;
+				case "night": waitTimeAV = zone != null && averageWaitingTimeZoneNight.containsKey(zone) ?
+						averageWaitingTimeZoneNight.get(zone).getFirst() : 0; break;
+				default: throw new RuntimeException("Undefined day time: " + dayTime);
+			}
+			double driveTimeAV = carTravelTimeCalculator.getCoordToCoordTravelTime(fromCoord, toCoord, time);
+			return driveTimeAV > 0 ? waitTimeAV + driveTimeAV : 0;
+		}
+
+		double getLinkToLinkTravelTime(Id<Link> fromLinkId, Id<Link> toLinkId, double time) {
 			String zone = getZone(network.getLinks().get(fromLinkId).getCoord());
 			String dayTime = getTime(time);
 			double waitTimeAV;
-			if (dayTime.equals("peak")) {
-				waitTimeAV = zone != null && averageWaitingTimeZonePeak.containsKey(zone) ?
-						averageWaitingTimeZonePeak.get(zone).getFirst() : 0;
-			} else if (dayTime.equals("offpeak")) {
-				waitTimeAV = zone != null && averageWaitingTimeZoneOffPeak.containsKey(zone) ?
-						averageWaitingTimeZoneOffPeak.get(zone).getFirst() : 0;
-			} else {
-				waitTimeAV = zone != null && averageWaitingTimeZoneNight.containsKey(zone) ?
-						averageWaitingTimeZoneNight.get(zone).getFirst() : 0;
+			switch (dayTime) {
+				case "peak": waitTimeAV = zone != null && averageWaitingTimeZonePeak.containsKey(zone) ?
+						averageWaitingTimeZonePeak.get(zone).getFirst() : 0; break;
+				case "offpeak": waitTimeAV = zone != null && averageWaitingTimeZoneOffPeak.containsKey(zone) ?
+						averageWaitingTimeZoneOffPeak.get(zone).getFirst() : 0; break;
+				case "night": waitTimeAV = zone != null && averageWaitingTimeZoneNight.containsKey(zone) ?
+						averageWaitingTimeZoneNight.get(zone).getFirst() : 0; break;
+				default: throw new RuntimeException("Undefined day time: " + dayTime);
 			}
 			double driveTimeAV = carTravelTimeCalculator.getLinkToLinkTravelTime(fromLinkId, toLinkId, time);
 			return driveTimeAV > 0 ? waitTimeAV + driveTimeAV : 0;
@@ -249,21 +276,25 @@ public class AccessiblitiesRouter {
 							personDepartureTime.get(personBoarded.get(activityEndEvent.getPersonId().toString()));
 					String dayTime = getTime(personDepartureTime.get(personBoarded.get(activityEndEvent.getPersonId().toString())));
 					Tuple<Double, Integer> averageWaitingTime;
-					if (dayTime.equals("peak")) {
-						averageWaitingTime = this.averageWaitingTimeZonePeak.getOrDefault(zone, new Tuple<>(0., 0));
-					} else if (dayTime.equals("offpeak")) {
-						averageWaitingTime = this.averageWaitingTimeZoneOffPeak.getOrDefault(zone, new Tuple<>(0., 0));
-					} else {
-						averageWaitingTime = this.averageWaitingTimeZoneNight.getOrDefault(zone, new Tuple<>(0., 0));
+					switch (dayTime) {
+						case "peak": averageWaitingTime = this.averageWaitingTimeZonePeak.getOrDefault(zone, new Tuple<>(0., 0)); break;
+						case "offpeak": averageWaitingTime = this.averageWaitingTimeZoneOffPeak.getOrDefault(zone, new Tuple<>(0., 0));break;
+						case "night": averageWaitingTime = this.averageWaitingTimeZoneNight.getOrDefault(zone, new Tuple<>(0., 0)); break;
+						default: throw new RuntimeException("Undefined day time: " + dayTime);
 					}
 					double totalWaitingTime = averageWaitingTime.getFirst() * averageWaitingTime.getSecond() + waitingTime;
 					int totalObservations = averageWaitingTime.getSecond() + 1;
-					if (dayTime.equals("peak")) {
-						this.averageWaitingTimeZonePeak.put(zone, new Tuple<>(totalWaitingTime / totalObservations, totalObservations));
-					} else if (dayTime.equals("offpeak")) {
-						this.averageWaitingTimeZoneOffPeak.put(zone, new Tuple<>(totalWaitingTime / totalObservations, totalObservations));
-					} else {
-						this.averageWaitingTimeZoneNight.put(zone, new Tuple<>(totalWaitingTime / totalObservations, totalObservations));
+					switch (dayTime) {
+						case "peak":
+							this.averageWaitingTimeZonePeak.put(zone, new Tuple<>(totalWaitingTime / totalObservations, totalObservations));
+							break;
+						case "offpeak":
+							this.averageWaitingTimeZoneOffPeak.put(zone, new Tuple<>(totalWaitingTime / totalObservations, totalObservations));
+							break;
+						case "night":
+							this.averageWaitingTimeZoneNight.put(zone, new Tuple<>(totalWaitingTime / totalObservations, totalObservations));
+							break;
+						default: throw new RuntimeException("Undefined day time: " + dayTime);
 					}
 				} else {
 					System.out.println("No zone found for link " + activityEndEvent.getLinkId());
@@ -321,6 +352,13 @@ public class AccessiblitiesRouter {
 			return path.travelTime;
 		}
 
+		double getCoordToCoordTravelTime(Coord fromCoord, Coord toCoord, double time) {
+			LeastCostPathCalculator.Path path = leastCostPathCalculator.calcLeastCostPath(
+					NetworkUtils.getNearestNode(this.network, fromCoord),
+					NetworkUtils.getNearestNode(this.network, toCoord), time, null, null);
+			return path.travelTime;
+		}
+
 		LeastCostPathCalculator getEventBasedLeastCostPathCalculator(Scenario scenario) {
 			// Return event based leastCostPathCalculator
 			TravelDisutility travelDisutility = new RandomizingTimeDistanceTravelDisutilityFactory(TransportMode.car, scenario.getConfig().planCalcScore()).createTravelDisutility(this.getLinkTravelTimes());
@@ -343,6 +381,17 @@ public class AccessiblitiesRouter {
 			List<Leg> transitRoute = transitRouter.calcRoute(
 					new FakeFacility(network.getLinks().get(fromLinkId).getFromNode().getCoord()),
 					new FakeFacility(network.getLinks().get(toLinkId).getToNode().getCoord()), time, null);
+			double travelTime = 0;
+			for (Leg leg : transitRoute) {
+				travelTime += leg.getTravelTime();
+			}
+			return travelTime;
+		}
+
+		double getCoordToCoordTravelTime(Coord fromCoord, Coord toCoord, double time) {
+			List<Leg> transitRoute = transitRouter.calcRoute(
+					new FakeFacility(fromCoord),
+					new FakeFacility(toCoord), time, null);
 			double travelTime = 0;
 			for (Leg leg : transitRoute) {
 				travelTime += leg.getTravelTime();
