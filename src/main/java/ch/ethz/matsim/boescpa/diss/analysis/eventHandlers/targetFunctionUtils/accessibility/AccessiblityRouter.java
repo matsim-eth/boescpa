@@ -29,9 +29,7 @@ import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.TransportMode;
-import org.matsim.api.core.v01.events.ActivityEndEvent;
-import org.matsim.api.core.v01.events.PersonDepartureEvent;
-import org.matsim.api.core.v01.events.PersonEntersVehicleEvent;
+import org.matsim.api.core.v01.events.*;
 import org.matsim.api.core.v01.events.handler.ActivityEndEventHandler;
 import org.matsim.api.core.v01.events.handler.PersonDepartureEventHandler;
 import org.matsim.api.core.v01.events.handler.PersonEntersVehicleEventHandler;
@@ -42,6 +40,7 @@ import org.matsim.api.core.v01.population.Person;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.config.groups.QSimConfigGroup;
 import org.matsim.core.events.EventsUtils;
 import org.matsim.core.events.MatsimEventsReader;
 import org.matsim.core.network.NetworkUtils;
@@ -79,7 +78,6 @@ public class AccessiblityRouter {
 
 	AccessiblityRouter(Config config, String path2Events, String path2CommunitiesSHP) {
 		Scenario scenario = ScenarioUtils.createScenario(config);
-		scenario.getConfig().travelTimeCalculator().setCalculateLinkToLinkTravelTimes(true);
 
 		// Load required scenario elements
 		new MatsimNetworkReader(scenario.getNetwork()).readFile(scenario.getConfig().network().getInputFile());
@@ -351,9 +349,9 @@ public class AccessiblityRouter {
 							break;
 						default: throw new RuntimeException("Undefined day time: " + dayTime);
 					}
-				} else {
+				} /*else {
 					System.out.println("No zone found for link " + activityEndEvent.getLinkId());
-				}
+				}*/
 				personDepartureTime.remove(personBoarded.remove(activityEndEvent.getPersonId().toString()));
 			}
 		}

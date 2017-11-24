@@ -29,6 +29,7 @@ import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
+import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.utils.io.IOUtils;
 import org.matsim.facilities.ActivityFacilities;
@@ -45,7 +46,7 @@ import java.util.Map;
  * @author boescpa
  */
 public class AccessibilityCalculator {
-	private final static double GridCellSize = 500; // meters
+	private final static double GridCellSize = 300; // meters
 	private final static String[] OpportunityActivities = {"work","home","leisure","shop","education"};
 	private final static String[] AnalyzedModes = {"car","pt","av","sm"};
 	private final static double[] ModeDeterrenceBetas = {0.2613, 0.2613, 0.2613, 0.2613};
@@ -82,12 +83,18 @@ public class AccessibilityCalculator {
 		String path2Events = args[1];
 		String path2Network = args[2];
 		String path2Facilities = args[3];
-		String path2SHP = args[4];
-		String outputPath = args[5];
+		String path2Schedule = args[4];
+		String path2SHP = args[5];
+		String outputPath = args[6];
+
+		Config config = ConfigUtils.loadConfig(path2Config);
+		config.network().setInputFile(path2Network);
+		config.facilities().setInputFile(path2Facilities);
+		config.transit().setTransitScheduleFile(path2Schedule);
 
 		Network network = NetworkUtils.readNetwork(path2Network);
 		ActivityFacilities facilities = FacilityUtils.readFacilities(path2Facilities);
-		AccessiblityRouter router = new AccessiblityRouter(ConfigUtils.loadConfig(path2Config), path2Events, path2SHP);
+		AccessiblityRouter router = new AccessiblityRouter(config, path2Events, path2SHP);
 		AccessibilityCalculator calculator = new AccessibilityCalculator(network, facilities, path2SHP, router);
 
 		Map<String,Map<String, Map<String, Double>>> totalAccessibilities = calculator.calculateTotalAccessibilities();
