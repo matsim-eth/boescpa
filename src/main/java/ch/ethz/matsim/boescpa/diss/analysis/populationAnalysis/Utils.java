@@ -49,7 +49,8 @@ class Utils {
 
 	static boolean hasHomeInArea(Person person, CoordAnalyzer coordAnalyzer) {
 		Activity homeAct = (Activity) person.getSelectedPlan().getPlanElements().get(0);
-		return coordAnalyzer.isCoordAffected(homeAct.getCoord());
+		return homeAct.getType().contains("home") && coordAnalyzer.isCoordAffected(homeAct.getCoord());
+		//return coordAnalyzer.isCoordAffected(homeAct.getCoord());
 	}
 
 }

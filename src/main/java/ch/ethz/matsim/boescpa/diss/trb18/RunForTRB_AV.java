@@ -24,6 +24,8 @@ package ch.ethz.matsim.boescpa.diss.trb18;
 import ch.ethz.matsim.av.framework.AVConfigGroup;
 import ch.ethz.matsim.av.framework.AVModule;
 import ch.ethz.matsim.av.framework.AVQSimProvider;
+import ch.ethz.matsim.av.routing.AVRoute;
+import ch.ethz.matsim.av.routing.AVRouteFactory;
 import ch.ethz.matsim.boescpa.diss.analysis.InSimAnalyzerHomeInSHPTargetFunction;
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorConfigGroup;
 import ch.ethz.matsim.boescpa.diss.baseline.replanning.BlackListedTimeAllocationMutatorStrategyModule;
@@ -58,7 +60,10 @@ public class RunForTRB_AV {
 		Config config = ConfigUtils.loadConfig(configFile,
 				new AVConfigGroup(), dvrpConfigGroup, // AV-modules
 				new BlackListedTimeAllocationMutatorConfigGroup()); // IVT-Modules
-		Scenario scenario = ScenarioUtils.loadScenario(config);
+		Scenario scenario = ScenarioUtils.createScenario(config);
+		scenario.getPopulation().getFactory().getRouteFactories().setRouteFactory(AVRoute.class, new AVRouteFactory());
+		ScenarioUtils.loadScenario(scenario);
+		//Scenario scenario = ScenarioUtils.loadScenario(config);
 
 		// Controller setup
 		Controler controler = new Controler(scenario);
