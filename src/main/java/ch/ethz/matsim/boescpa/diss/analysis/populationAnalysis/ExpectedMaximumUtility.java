@@ -83,8 +83,10 @@ public class ExpectedMaximumUtility {
 				for (Plan plan : person.getPlans()) {
 					expSumOfPlansScore += Math.exp(plan.getScore()-plans95MaxScore);
 				}
-				double logSumOfPlansScore = plans95MaxScore + Math.log(expSumOfPlansScore);
-				emuSum += logSumOfPlansScore / absMarginalUtilityOfMoney;
+				if (expSumOfPlansScore > 0) {
+					double logSumOfPlansScore = plans95MaxScore + Math.log(expSumOfPlansScore);
+					emuSum += logSumOfPlansScore / absMarginalUtilityOfMoney;
+				}
 			}
 		}
 		return "Expected Maximum Utility population: " + ScenarioAnalyzer.DEL + df.format(emuSum) + ScenarioAnalyzer.NL;
