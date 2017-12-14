@@ -124,7 +124,7 @@ public class MultiODGrowingFleetDispatcher implements AVDispatcher {
 				double remainingTime = estimator.getTravelTimeThreshold()
 						- (now - request.getMasterRequest().getSubmissionTime());
 				if (remainingTime > 0) {
-					AVVehicle vehicle = findClosestVehicle(request.getMasterRequest().getFromLink(), remainingTime);
+					AVVehicle vehicle = findClosestVehicle(request.getMasterRequest().getFromLink(), remainingTime, now);
 					if (vehicle != null) {
 						// We have a vehicle and it's getting on the way.
 						removeVehicle(vehicle);
@@ -189,17 +189,17 @@ public class MultiODGrowingFleetDispatcher implements AVDispatcher {
 		return bestAggregate;
 	}
 
-	private AVVehicle findClosestVehicle(Link link, double remainingTime) {
+	private AVVehicle findClosestVehicle(Link link, double remainingTime, double now) {
 		AVVehicle closestVehicle = availableVehiclesTree.size() > 0 ?
 				availableVehiclesTree.getClosest(link.getCoord().getX(), link.getCoord().getY()) : null;
 		if (closestVehicle != null) {
 			double travelTimeVehicle =
-					estimator.estimateTravelTime(link, availableVehicleLinks.get(closestVehicle), 0);
+					estimator.estimateTravelTime(link, availableVehicleLinks.get(closestVehicle), now);
 			if (travelTimeVehicle <= remainingTime) {
 				return closestVehicle;
 			}
 		}
-		return closestVehicle;
+		return null;
 	}
 
 	private AVVehicle getNewVehicle(Link fromLink, double now) {
@@ -242,7 +242,7 @@ public class MultiODGrowingFleetDispatcher implements AVDispatcher {
 		public AVDispatcher createDispatcher(AVDispatcherConfig config) {
 			double levelOfService = ((GrowingFleetDispatcherConfig)fullConfig.getModules().get(GrowingFleetDispatcherConfig.NAME)).getLevelOfService();
 			TravelTimeEstimator estimator =
-					new GrowingFleetTravelTimeEstimator(fullConfig.plansCalcRoute(), "undefined",
+					new GrowingFleetTravelTimeEstimator(fullConfig, network, "undefined",
 							levelOfService);
 
 			return new MultiODGrowingFleetDispatcher(

@@ -43,6 +43,7 @@ import org.matsim.core.config.Config;
 import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.router.util.TravelTime;
 import org.matsim.core.utils.collections.QuadTree;
+import org.matsim.core.utils.geometry.CoordUtils;
 
 import java.util.*;
 
@@ -115,7 +116,7 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 			double remainingTime = estimator.getTravelTimeThreshold() - (now - request.getSubmissionTime());
 			if (remainingTime > 0) {
 				if (changesHappened) {
-					AVVehicle vehicle = findClosestVehicle(request.getFromLink(), remainingTime);
+					AVVehicle vehicle = findClosestVehicle(request.getFromLink(), remainingTime, now);
 					if (vehicle != null) {
 						// We have a vehicle and it's getting on the way.
 						handledRequests.add(request);
@@ -151,17 +152,17 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 		}
 	}
 
-	private AVVehicle findClosestVehicle(Link link, double remainingTime) {
+	private AVVehicle findClosestVehicle(Link link, double remainingTime, double now) {
 		AVVehicle closestVehicle = availableVehiclesTree.size() > 0 ?
 				availableVehiclesTree.getClosest(link.getCoord().getX(), link.getCoord().getY()) : null;
 		if (closestVehicle != null) {
 			double travelTimeVehicle =
-					estimator.estimateTravelTime(link, availableVehicleLinks.get(closestVehicle), 0);
+					estimator.estimateTravelTime(link, availableVehicleLinks.get(closestVehicle), now);
 			if (travelTimeVehicle <= remainingTime) {
 				return closestVehicle;
 			}
 		}
-		return closestVehicle;
+		return null;
 	}
 
 	private void removeVehicle(AVVehicle vehicle) {
@@ -173,7 +174,8 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 		@Inject @Named(IVTAVModule.AV_MODE)
 		private Network network;
 
-		@Inject private EventsManager eventsManager;
+		@Inject
+		private EventsManager eventsManager;
 
 		@Inject @Named(IVTAVModule.AV_MODE)
 		private TravelTime travelTime;
@@ -188,8 +190,7 @@ public class GrowingFleetDispatcher implements AVDispatcher {
 		public AVDispatcher createDispatcher(AVDispatcherConfig config) {
 			double levelOfService = ((GrowingFleetDispatcherConfig)fullConfig.getModules().get(GrowingFleetDispatcherConfig.NAME)).getLevelOfService();
 			GrowingFleetTravelTimeEstimator estimator =
-					new GrowingFleetTravelTimeEstimator(fullConfig.plansCalcRoute(), "undefined",
-							levelOfService);
+					new GrowingFleetTravelTimeEstimator(fullConfig, network,"undefined", levelOfService);
 
 			return new GrowingFleetDispatcher(
 					eventsManager,
