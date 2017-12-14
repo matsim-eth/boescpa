@@ -46,11 +46,11 @@ import java.util.Set;
  *
  * @author boescpa
  */
-public class savFleetStats {
+public class SavFleetStats {
 	private final static int LoS = 300;
 	private final Network network;
 
-	public savFleetStats(Network network) {
+	public SavFleetStats(Network network) {
 		this.network = network;
 	}
 
@@ -58,7 +58,7 @@ public class savFleetStats {
 		String path2Events = args[0];
 		String path2Network = args[1];
 
-		savFleetStats misc2 = new savFleetStats(NetworkUtils.readNetwork(path2Network));
+		SavFleetStats misc2 = new SavFleetStats(NetworkUtils.readNetwork(path2Network));
 		misc2.handleEvents(path2Events);
 	}
 

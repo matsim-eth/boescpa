@@ -116,7 +116,7 @@ public class KilometerCounter implements LinkLeaveEventHandler, PersonEntersVehi
 			Map<Id<Person>, Double> vehiclePassengers = this.vehiclesToObserve.get(vehicleId);
 			for(Id<Person> personId : vehiclePassengers.keySet()) {
 				double passengerKilometers = vehiclePassengers.get(personId);
-				passengerKilometers += this.network.getLinks().get(linkId).getLength()/1000; // converstion to km
+				passengerKilometers += this.network.getLinks().get(linkId).getLength()/1000; // conversion to km
 				vehiclePassengers.put(personId, passengerKilometers);
 			}
 		}
