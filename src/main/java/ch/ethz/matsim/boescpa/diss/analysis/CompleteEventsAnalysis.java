@@ -67,7 +67,7 @@ public class CompleteEventsAnalysis {
 		String pathToEvents = args[6];
 		double scalingFactor = Double.parseDouble(args[7]);
 		boolean isAV = Boolean.parseBoolean(args[8]);
-		int LoS = isAV ? (pathToEvents.contains("180") ? 180 : 300) : 0;
+		int LoS = args[8].equals("oligo") ? 1 : (isAV ? (pathToEvents.contains("180") ? 180 : 300) : 0);
 
 		CoordAnalyzer ca = CoordAnalyzer.getCoordAnalyzer(pathToHomesSHP);
 

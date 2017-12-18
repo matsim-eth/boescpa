@@ -91,4 +91,8 @@ public abstract class ScenarioAnalyzerEventHandlerHomeInSHP extends ScenarioAnal
 		}
 		return false;
 	}
+
+	public boolean isCoordToConsider(Coord coord) {
+		return coordAnalyzer.isCoordAffected(coord);
+	}
 }

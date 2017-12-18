@@ -123,6 +123,9 @@ public class KilometerCounter implements LinkLeaveEventHandler, PersonEntersVehi
 	}
 
 	private void addVKM(String type, Id<Link> linkId) {
+		if (!targetFunctionEvaluator.isCoordToConsider(network.getLinks().get(linkId).getCoord())) {
+			return;
+		}
 		double vehicleKilometer = this.vehicleKilometersDriven.getOrDefault(type,0.);
 		vehicleKilometer += this.network.getLinks().get(linkId).getLength()/1000; // conversion to km
 		this.vehicleKilometersDriven.put(type, vehicleKilometer);
