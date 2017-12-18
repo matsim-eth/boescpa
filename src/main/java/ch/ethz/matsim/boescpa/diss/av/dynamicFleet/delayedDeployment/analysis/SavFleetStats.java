@@ -57,12 +57,18 @@ public class SavFleetStats {
 	private final int LoS;
 	private final CoordAnalyzer coordAnalyzer;
 	private final Population population;
+	private final MyHandler handler;
 
 	public SavFleetStats(Network network, Population population, int LoS, String path2SHP) {
+		this(network, population, LoS, path2SHP != null ? CoordAnalyzer.getCoordAnalyzer(path2SHP) : null);
+	}
+
+	public SavFleetStats(Network network, Population population, int LoS, CoordAnalyzer coordAnalyzer) {
 		this.network = network;
 		this.population = population;
 		this.LoS = LoS;
-		coordAnalyzer = path2SHP != null ? CoordAnalyzer.getCoordAnalyzer(path2SHP) : null;
+		this.coordAnalyzer = coordAnalyzer;
+		this.handler = new MyHandler();
 	}
 
 	public static void main(final String[] args) throws IOException {
@@ -75,18 +81,11 @@ public class SavFleetStats {
 
 		SavFleetStats misc2 = new SavFleetStats(NetworkUtils.readNetwork(path2Network),
 				PopulationUtils.readPopulation(path2Population), LoS, path2SHP);
-		misc2.handleEvents(path2Events, scalingFactor);
+		misc2.readEvents(path2Events);
+		misc2.writeOutput(scalingFactor);
 	}
 
-	private void handleEvents(String path2Events, double scalingFactor) throws IOException {
-		MyHandler handler = new MyHandler();
-		EventsManager eventsManager= EventsUtils.createEventsManager();
-		eventsManager.addHandler(handler);
-		// Read the events file:
-		MatsimEventsReader reader = new MatsimEventsReader(eventsManager);
-		reader.readFile(path2Events);
-		if (handler.linkLeaves > 500) System.out.println(handler.lastTime + ": " + handler.linkLeaves);
-
+	public void writeOutput(double scalingFactor) throws IOException {
 		BufferedWriter writer = IOUtils.getBufferedWriter("./savUsageStats.csv");
 		writer.write("\nTotal waiting time agents; " + handler.totalWaitingTime
 				+ "; " + scalingFactor*handler.totalWaitingTime);
@@ -200,6 +199,19 @@ public class SavFleetStats {
 			writer.write("\n" + i + "; " + handler.waitingTimeDistribution.get(i).getSecond()/handler.waitingTimeDistribution.get(i).getFirst() + "; " + handler.waitingTimeDistribution.get(i).getFirst());
 		}
 		writer.close();
+	}
+
+	private void readEvents(String path2Events) {
+		EventsManager eventsManager= EventsUtils.createEventsManager();
+		eventsManager.addHandler(handler);
+		// Read the events file:
+		MatsimEventsReader reader = new MatsimEventsReader(eventsManager);
+		reader.readFile(path2Events);
+		//if (handler.linkLeaves > 500) System.out.println(handler.lastTime + ": " + handler.linkLeaves);
+	}
+
+	public void addHandler(EventsManager em) {
+		em.addHandler(handler);
 	}
 
 	private class MyHandler implements LinkLeaveEventHandler, PersonDepartureEventHandler, PersonEntersVehicleEventHandler, PersonLeavesVehicleEventHandler, ActivityEndEventHandler, ActivityStartEventHandler {
@@ -318,9 +330,9 @@ public class SavFleetStats {
 					maxCrowPickDist = crowPickDist > maxCrowPickDist ? crowPickDist : maxCrowPickDist;
 					minCrowPickDist = crowPickDist < minCrowPickDist ? crowPickDist : minCrowPickDist;
 					if ((crowPickDist * 1.3 / 13.8888888889) > LoS) {
-						System.out.println(activityEndEvent.getTime() +
-								" - " + activityEndEvent.getPersonId() +
-								" - " + crowPickDist);
+						//System.out.println(activityEndEvent.getTime() +
+						//		" - " + activityEndEvent.getPersonId() +
+						//		" - " + crowPickDist);
 						anzCrowDistBigger180++;
 					}
 				}
@@ -363,7 +375,7 @@ public class SavFleetStats {
 									network.getLinks().get(linkLeaveEvent.getLinkId()).getLength());
 				}
 				if (linkLeaveEvent.getTime() != lastTime) {
-					if (linkLeaves > 500) System.out.println(lastTime + ": " + linkLeaves);
+					//if (linkLeaves > 500) System.out.println(lastTime + ": " + linkLeaves);
 					lastTime = linkLeaveEvent.getTime();
 					linkLeaves = 0;
 				}

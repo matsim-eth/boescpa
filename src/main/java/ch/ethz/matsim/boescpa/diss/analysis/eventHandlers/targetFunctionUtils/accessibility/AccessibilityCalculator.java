@@ -72,8 +72,13 @@ public class AccessibilityCalculator {
 
 	private AccessibilityCalculator(Network network, ActivityFacilities activityFacilities, String pathToSHP,
 									AccessiblityRouter accessiblityRouter) {
+		this(network, activityFacilities, CoordAnalyzer.getCoordAnalyzer(pathToSHP), accessiblityRouter);
+	}
+
+	public AccessibilityCalculator(Network network, ActivityFacilities activityFacilities, CoordAnalyzer coordAnalyzer,
+								   AccessiblityRouter accessiblityRouter) {
 		this.network = network;
-		this.coordAnalyzer = CoordAnalyzer.getCoordAnalyzer(pathToSHP);
+		this.coordAnalyzer = coordAnalyzer;
 		this.opportunities = calculateOpportunities(activityFacilities);
 		this.router = accessiblityRouter;
 	}
@@ -103,7 +108,7 @@ public class AccessibilityCalculator {
 		calculator.writeAverageAccessibilities(averageAccessibilities, outputPath);
 	}
 
-	private void writeAverageAccessibilities(Map<String, Map<String, Double>> averageAccessibilities, String outputPath) throws IOException {
+	public void writeAverageAccessibilities(Map<String, Map<String, Double>> averageAccessibilities, String outputPath) throws IOException {
 		BufferedWriter writer = IOUtils.getBufferedWriter(outputPath);
 		writer.write("daytime;mode;averageAccessibility");
 		writer.newLine();
@@ -120,8 +125,8 @@ public class AccessibilityCalculator {
 	// meaning of the strings:
 	//  1. daytime (peak, offpeak, night)
 	//  2. mode (AnalyzedModes)
-	private Map<String, Map<String, Double>> calculateOpportunityWeightedAverageAccessibilities(
-			Map<String,Map<String, Map<String, Double>>> totalAccessibilities) {
+	public Map<String, Map<String, Double>> calculateOpportunityWeightedAverageAccessibilities(
+			Map<String, Map<String, Map<String, Double>>> totalAccessibilities) {
 		Map<String, Map<String, Double>> averageAccessibilities = new HashMap<>();
 		for (String daytime : totalAccessibilities.keySet()) {
 			for (String mode : AnalyzedModes) {
@@ -143,7 +148,7 @@ public class AccessibilityCalculator {
 	//  1. daytime (peak, offpeak, night)
 	//  2. mode (AnalyzedModes)
 	//  3. zone
-	private Map<String,Map<String, Map<String, Double>>> calculateTotalAccessibilities() {
+	public Map<String,Map<String, Map<String, Double>>> calculateTotalAccessibilities() {
 		Map<String, Map<String, Map<String, Double>>> accessibilitiesTotal = createAccessibilitiesTree();
 		double zoneCounter = 0;
 		double zoneCounterTrigger = 0;

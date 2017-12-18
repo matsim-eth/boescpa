@@ -76,6 +76,16 @@ public class AccessiblityRouter {
 	private final AVTravelTimeCalculator avTravelTimeCalculator;
 	private final SMTravelTimeCalculator smTravelTimeCalculator;
 
+	public AccessiblityRouter(Scenario scenario, EventsManager eventsManager, String path2CommunitiesSHP) {
+		this.carTravelTimeCalculator = new CarTravelTimeCalculator(scenario);
+		this.avTravelTimeCalculator = new AVTravelTimeCalculator(scenario, path2CommunitiesSHP, carTravelTimeCalculator);
+		this.ptTravelTimeCalculator = new PTTravelTimeCalculator(scenario);
+		this.smTravelTimeCalculator = new SMTravelTimeCalculator(scenario);
+		eventsManager.addHandler(this.carTravelTimeCalculator);
+		eventsManager.addHandler(this.avTravelTimeCalculator);
+		eventsManager.addHandler(this.smTravelTimeCalculator);
+	}
+
 	AccessiblityRouter(Config config, String path2Events, String path2CommunitiesSHP) {
 		Scenario scenario = ScenarioUtils.createScenario(config);
 

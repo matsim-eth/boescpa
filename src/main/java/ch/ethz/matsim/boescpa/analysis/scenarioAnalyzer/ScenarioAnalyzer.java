@@ -57,14 +57,19 @@ public class ScenarioAnalyzer {
 		EventsManager eventsManager= EventsUtils.createEventsManager();
 
 		// Add all handlers:
-		for (ScenarioAnalyzerEventHandler handler : scenarioAnalyzerEventHandlers) {
-			handler.reset(0);
-			eventsManager.addHandler(handler);
-		}
+		addHandlers(eventsManager);
 
 		// Read the events file:
 		MatsimEventsReader reader = new MatsimEventsReader(eventsManager);
 		reader.readFile(eventsFile);
+	}
+
+	public void addHandlers(EventsManager eventsManager) {
+		// Add all handlers:
+		for (ScenarioAnalyzerEventHandler handler : scenarioAnalyzerEventHandlers) {
+			handler.reset(0);
+			eventsManager.addHandler(handler);
+		}
 	}
 
 	public void createResults(String pathToResultsFile, SpatialCutter spatialEventCutter) {
