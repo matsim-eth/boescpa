@@ -48,8 +48,10 @@ import java.util.Map;
 public class AccessibilityCalculator {
 	private final static double GridCellSize = 1000; // meters
 	private final static String[] OpportunityActivities = {"work","home","leisure","shop","education"};
-	private final static String[] AnalyzedModes = {"car", "av"};//{"car","pt","av","sm"};
-	private final static double[] ModeDeterrenceBetas = {0.2613, 0.2613}; //{0.2613, 0.2613, 0.2613, 0.2613};
+	//private final static String[] AnalyzedModes = {"car", "av"};
+	//private final static double[] ModeDeterrenceBetas = {0.2613, 0.2613};
+	private final static String[] AnalyzedModes = {"car","pt","av","sm"};
+	private final static double[] ModeDeterrenceBetas = {0.2613, 0.2613, 0.2613, 0.2613};
 	// source betas:
 	/*
 	Axhausen, K.W., T. Bischof, R. Fuhrer, R. Neuenschwander, G. Sarlas, und P. Walker (2015):

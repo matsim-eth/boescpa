@@ -24,6 +24,7 @@ package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.analysis;
 import ch.ethz.matsim.boescpa.lib.tools.coordUtils.CoordAnalyzer;
 import ch.ethz.matsim.boescpa.lib.tools.utils.NetworkUtils;
 import ch.ethz.matsim.boescpa.lib.tools.utils.PopulationUtils;
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.*;
@@ -42,10 +43,7 @@ import org.matsim.core.utils.io.IOUtils;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * WHAT IS IT FOR?
@@ -75,7 +73,7 @@ public class SavFleetStats {
 		String path2Events = args[0];
 		String path2Network = args[1];
 		String path2Population = args[2];
-		int LoS = Integer.parseInt(args[3]);
+		int LoS = args[3].equals("oligo") ? 1 : (path2Events.contains("180") ? 180 : 300);
 		double scalingFactor = Integer.parseInt(args[4]);
 		String path2SHP = args.length > 5 ? args[5] : null;
 
@@ -102,6 +100,17 @@ public class SavFleetStats {
 		writer.write("Number of waiting times bigger LoS; " + handler.anzWaitingTimeBigger180
 				+ "; " + scalingFactor*handler.anzWaitingTimeBigger180);
 		writer.newLine();
+		Percentile p = new Percentile();
+		p.setData(handler.waitingTimes.stream().mapToDouble(d -> d).toArray());
+		writer.write("Waiting Time 25th percentile; " + p.evaluate(25.0) + ";" + p.evaluate(25.0));
+		writer.newLine();
+		writer.write("Waiting Time 50th percentile; " + p.evaluate(50.0) + ";" + p.evaluate(50.0));
+		writer.newLine();
+		writer.write("Waiting Time 75th percentile; " + p.evaluate(75.0) + ";" + p.evaluate(75.0));
+		writer.newLine();
+		double upperIQR = p.evaluate(75.0) + (1.5*(p.evaluate(75.0) - p.evaluate(25.0)));
+		long upperOutliers = handler.waitingTimes.stream().filter(d -> d > upperIQR).count();
+		writer.write("Number of upper outliers; " + upperOutliers + ";" + scalingFactor*upperOutliers);
 
 		writer.write("\nTotal pick-up drive time; " + handler.totalPickTime
 				+ "; " + scalingFactor*handler.totalPickTime);
@@ -221,6 +230,7 @@ public class SavFleetStats {
 		private final Map<String, Double> personBoarded = new LinkedHashMap<>();
 		private final Set<String> avVehicles = new HashSet<>();
 		private final Map<Integer, Tuple<Integer, Double>> waitingTimeDistribution = new LinkedHashMap<>();
+		private final List<Double> waitingTimes = new ArrayList<>();
 		private final Map<String, Double> vehiclePickUpDist = new LinkedHashMap<>();
 		private final Map<String, Double> vehiclePickUpTime = new LinkedHashMap<>();
 		private final Map<String, String> vehicleCrowDist = new LinkedHashMap<>();
@@ -271,6 +281,7 @@ public class SavFleetStats {
 				double waitingTime = personEntersVehicleEvent.getTime() -
 						personDepartureTime.get(personEntersVehicleEvent.getPersonId());
 				totalWaitingTime += waitingTime;
+				waitingTimes.add(waitingTime);
 				maxWaitingTime = waitingTime > maxWaitingTime ? waitingTime : maxWaitingTime;
 				minWaitingTime = waitingTime < minWaitingTime ? waitingTime : minWaitingTime;
 				if (waitingTime > LoS) {
