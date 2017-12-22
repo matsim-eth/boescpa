@@ -60,8 +60,8 @@ public class RunEvaluation {
 				+ header_AnzPassengers
 				+ header_TimeUsage
 				+ header_AVFleetSizes
-				+ header_Accessibility;
-				//+ header_AVStats;
+				+ header_Accessibility
+				+ header_AVStats;
 		System.out.print(header + "\n");
 		this.writer.write(header);
 		this.writer.newLine();
@@ -110,7 +110,7 @@ public class RunEvaluation {
 			output = output.concat(getTimeUsages(pathToRunFolder, runId));
 			output = output.concat(getAVFleetSizes(pathToRunFolder, runId));
 			output = output.concat(getAccessibilities(pathToRunFolder, runId));
-			//output = output.concat(getAVStats(pathToRunFolder, runId));
+			output = output.concat(getAVStats(pathToRunFolder, runId));
 			// ****************************
 			// add more information here...
 			// ****************************
@@ -120,17 +120,49 @@ public class RunEvaluation {
 		}
 	}
 
-	/*private static final String header_AVStats = "";
+	private static final String header_AVStats = DEL + "avTotWaitTimeAgents" + DEL + "avAvgWaitingTime" + DEL +
+			"avMaxWaitingTime" + DEL + "avMinWaitingTime" + DEL + "avNumWaitingBiggerLoS" + DEL +
+			"avWaitingTime25thPercentile" + DEL + "avWaitingTime50thPercentile" + DEL + "avWaitingTime75thPercentile" +
+			DEL + "avNumberUpperOutliers" + DEL + "avTotalPickUpDriveTime" + DEL + "avAveragePickUpDriveTimeSAVandDay" +
+			DEL + "avMaxPickDistToATAXIpassARSfirstPassPool" + DEL + "avMinPickDistToATAXIpassARSfirstPassPool" + DEL +
+			"avAvgPickDistSAVandDay" + DEL + "avAvgCrowPickDistToATAXIpassARSfirstPassPool" + DEL +
+			"avMaxCrowPickDistToATAXIpassARSfirstPassPool" + DEL + "avMinCrowPickDistToATAXIpassARSfirstPassPool" + DEL +
+			"avNumberOfCrowPicksBiggerLoS" + DEL + "avTotalBordingTime" + DEL + "avAvgBordingTime" + DEL +
+			"avMaxBordingTime" + DEL + "avMinBordingTime" + DEL + "avAvgBordingTimePerSAVandDay" + DEL +
+			"avTotalDrivingTime" + DEL + "avAverageDriveTimePass" + DEL + "avAvgDriveTimeSAVandDay" + DEL +
+			"avTotalDrivingDist" + DEL + "avAvgDrivingDistSAVandDay" + DEL + "avAvgDrivingSpeedAVwhenPass" + DEL +
+			"avTotalDropoffTime" + DEL + "avAvgDropOffPassenger" + DEL + "avAvgDropOffPerSAVandDay" + DEL +
+			"avTotalNumPassengers" + DEL + "avTotalNumSAVs" + DEL + "avNumPassPerSAV";
 
-	private String getAVStats(String pathToRunFolder, String runId) {
-		//int fleetSize = getFleetSize(pathToRunFolder + File.separator + runId + )
-		return "";
-	}*/
+	private String getAVStats(String pathToRunFolder, String runId) throws IOException {
+		if (simClass.equals("nonAV")) {
+			return DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 +
+					DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 +
+					DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 +
+					DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0;
+		}
+		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
+				+ "savUsageStats.csv");
+		reader.readLine(); // header
+		String line = reader.readLine();
+		String out = "";
+		while (line != null) {
+			if (!line.equals("")) {
+				String avStat = line.split(";")[2];
+				out = out.concat(DEL + avStat);
+			}
+			line = reader.readLine();
+		}
+		return out;
+	}
 
 	private static final String header_Accessibility = DEL + "access_night_car" + DEL + "access_night_pt" +
 			DEL + "access_night_av" + DEL + "access_night_sm" + DEL + "access_peak_car" + DEL + "access_peak_pt" +
 			DEL + "access_peak_av" + DEL + "access_peak_sm" + DEL + "access_offpeak_car" + DEL + "access_offpeak_pt" +
 			DEL + "access_offpeak_av" + DEL + "access_offpeak_sm";
+
+	private static final String[] pt_sm_access = {"9111.25451325241", "9584.34740326614", "9619.27849236449",
+			"9584.34740326614", "9560.81829468568", "9584.34740326614"};
 
 	private String getAccessibilities(String pathToRunFolder, String runId) throws IOException {
 		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
@@ -138,10 +170,11 @@ public class RunEvaluation {
 		reader.readLine(); // header
 		String line = reader.readLine();
 		String out = "";
+		int i = 0;
 		while (line != null) {
 			String accessibility = line.split(";")[2];
-			out = out.concat(DEL + accessibility);
-			line = reader.readLine();
+			out = out.concat(DEL + accessibility + DEL + pt_sm_access[i]);
+			line = reader.readLine(); i++;
 		}
 		return out;
 	}
