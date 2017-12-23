@@ -108,6 +108,8 @@ public class SavFleetStats {
 		writer.newLine();
 		writer.write("Waiting Time 75th percentile; " + p.evaluate(75.0) + ";" + p.evaluate(75.0));
 		writer.newLine();
+		writer.write("Waiting Time 95th percentile; " + p.evaluate(95.0) + ";" + p.evaluate(95.0));
+		writer.newLine();
 		double upperIQR = p.evaluate(75.0) + (1.5*(p.evaluate(75.0) - p.evaluate(25.0)));
 		long upperOutliers = handler.waitingTimes.stream().filter(d -> d > upperIQR).count();
 		writer.write("Number of upper outliers; " + upperOutliers + ";" + scalingFactor*upperOutliers);

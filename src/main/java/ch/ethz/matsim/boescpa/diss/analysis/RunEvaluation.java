@@ -123,23 +123,23 @@ public class RunEvaluation {
 	private static final String header_AVStats = DEL + "avTotWaitTimeAgents" + DEL + "avAvgWaitingTime" + DEL +
 			"avMaxWaitingTime" + DEL + "avMinWaitingTime" + DEL + "avNumWaitingBiggerLoS" + DEL +
 			"avWaitingTime25thPercentile" + DEL + "avWaitingTime50thPercentile" + DEL + "avWaitingTime75thPercentile" +
-			DEL + "avNumberUpperOutliers" + DEL + "avTotalPickUpDriveTime" + DEL + "avAveragePickUpDriveTimeSAVandDay" +
-			DEL + "avMaxPickDistToATAXIpassARSfirstPassPool" + DEL + "avMinPickDistToATAXIpassARSfirstPassPool" + DEL +
-			"avAvgPickDistSAVandDay" + DEL + "avAvgCrowPickDistToATAXIpassARSfirstPassPool" + DEL +
-			"avMaxCrowPickDistToATAXIpassARSfirstPassPool" + DEL + "avMinCrowPickDistToATAXIpassARSfirstPassPool" + DEL +
-			"avNumberOfCrowPicksBiggerLoS" + DEL + "avTotalBordingTime" + DEL + "avAvgBordingTime" + DEL +
-			"avMaxBordingTime" + DEL + "avMinBordingTime" + DEL + "avAvgBordingTimePerSAVandDay" + DEL +
-			"avTotalDrivingTime" + DEL + "avAverageDriveTimePass" + DEL + "avAvgDriveTimeSAVandDay" + DEL +
-			"avTotalDrivingDist" + DEL + "avAvgDrivingDistSAVandDay" + DEL + "avAvgDrivingSpeedAVwhenPass" + DEL +
-			"avTotalDropoffTime" + DEL + "avAvgDropOffPassenger" + DEL + "avAvgDropOffPerSAVandDay" + DEL +
-			"avTotalNumPassengers" + DEL + "avTotalNumSAVs" + DEL + "avNumPassPerSAV";
+			DEL + "avWaitingTime95thPercentile" + DEL + "avNumberUpperOutliers" + DEL + "avTotalPickUpDriveTime" + DEL +
+			"avAveragePickUpDriveTimeSAVandDay" + DEL + "avMaxPickDistToATAXIpassARSfirstPassPool" + DEL +
+			"avMinPickDistToATAXIpassARSfirstPassPool" + DEL + "avAvgPickDistSAVandDay" + DEL +
+			"avAvgCrowPickDistToATAXIpassARSfirstPassPool" + DEL + "avMaxCrowPickDistToATAXIpassARSfirstPassPool" + DEL +
+			"avMinCrowPickDistToATAXIpassARSfirstPassPool" + DEL + "avNumberOfCrowPicksBiggerLoS" + DEL +
+			"avTotalBordingTime" + DEL + "avAvgBordingTime" + DEL + "avMaxBordingTime" + DEL + "avMinBordingTime" + DEL +
+			"avAvgBordingTimePerSAVandDay" + DEL + "avTotalDrivingTime" + DEL + "avAverageDriveTimePass" + DEL +
+			"avAvgDriveTimeSAVandDay" + DEL + "avTotalDrivingDist" + DEL + "avAvgDrivingDistSAVandDay" + DEL +
+			"avAvgDrivingSpeedAVwhenPass" + DEL + "avTotalDropoffTime" + DEL + "avAvgDropOffPassenger" + DEL +
+			"avAvgDropOffPerSAVandDay" + DEL + "avTotalNumPassengers" + DEL + "avTotalNumSAVs" + DEL + "avNumPassPerSAV";
 
 	private String getAVStats(String pathToRunFolder, String runId) throws IOException {
 		if (simClass.equals("nonAV")) {
 			return DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 +
 					DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 +
 					DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 +
-					DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0;
+					DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0;
 		}
 		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
 				+ "savUsageStats.csv");
