@@ -24,6 +24,8 @@ package ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment;
 import ch.ethz.matsim.av.framework.AVConfigGroup;
 import ch.ethz.matsim.av.framework.AVQSimProvider;
 import ch.ethz.matsim.av.framework.AVUtils;
+import ch.ethz.matsim.av.routing.AVRoute;
+import ch.ethz.matsim.av.routing.AVRouteFactory;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.analysis.FleetSizeTracker;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.dispatcher.GrowingFleetDispatcher;
 import ch.ethz.matsim.boescpa.diss.av.dynamicFleet.delayedDeployment.dispatcher.GrowingFleetDispatcherConfig;
@@ -61,7 +63,9 @@ public class RunAVScenario {
 		Config config = ConfigUtils.loadConfig(configFile,
 				new AVConfigGroup(), dvrpConfigGroup, new GrowingFleetDispatcherConfig(), // AV-modules
 				new BlackListedTimeAllocationMutatorConfigGroup(), new IndividualVOTConfig()); // IVT-Modules
-		Scenario scenario = ScenarioUtils.loadScenario(config);
+		Scenario scenario = ScenarioUtils.createScenario(config);
+		scenario.getPopulation().getFactory().getRouteFactories().setRouteFactory(AVRoute.class, new AVRouteFactory());
+		ScenarioUtils.loadScenario(scenario);
 
 		// Controller setup
 		Controler controler = new Controler(scenario);

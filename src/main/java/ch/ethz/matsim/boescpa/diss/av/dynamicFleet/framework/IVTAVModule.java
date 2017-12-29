@@ -13,8 +13,10 @@ import ch.ethz.matsim.av.framework.AVUtils;
 import ch.ethz.matsim.av.generator.AVGenerator;
 import ch.ethz.matsim.av.generator.PopulationDensityGenerator;
 import ch.ethz.matsim.av.plcpc.ParallelLeastCostPathCalculator;
+import ch.ethz.matsim.av.plcpc.DefaultParallelLeastCostPathCalculator;
+import ch.ethz.matsim.av.plcpc.SerialLeastCostPathCalculator;
 import ch.ethz.matsim.av.replanning.AVOperatorChoiceStrategy;
-import ch.ethz.matsim.av.routing.AVParallelRouterFactory;
+//import ch.ethz.matsim.av.routing.AVParallelRouterFactory;
 import ch.ethz.matsim.av.routing.AVRoute;
 import ch.ethz.matsim.av.routing.AVRouteFactory;
 import ch.ethz.matsim.av.routing.AVRoutingModule;
@@ -37,6 +39,7 @@ import org.matsim.core.population.routes.RouteFactories;
 import org.matsim.core.router.Dijkstra;
 import org.matsim.core.router.StageActivityTypesImpl;
 import org.matsim.core.router.costcalculators.OnlyTimeDependentTravelDisutility;
+import org.matsim.core.router.util.DijkstraFactory;
 import org.matsim.core.router.util.LeastCostPathCalculator;
 import org.matsim.core.router.util.TravelTime;
 import org.matsim.core.scoring.ScoringFunctionFactory;
@@ -75,18 +78,26 @@ public class IVTAVModule extends AbstractModule {
         configureDispatchmentStrategies();
         configureGeneratorStrategies();
 
-        bind(AVParallelRouterFactory.class);
-        addControlerListenerBinding().to(Key.get(ParallelLeastCostPathCalculator.class, Names.named(IVTAVModule.AV_MODE)));
-        addMobsimListenerBinding().to(Key.get(ParallelLeastCostPathCalculator.class, Names.named(IVTAVModule.AV_MODE)));
+        //bind(AVParallelRouterFactory.class);
+        //addControlerListenerBinding().to(Key.get(ParallelLeastCostPathCalculator.class, Names.named(IVTAVModule.AV_MODE)));
+        //addMobsimListenerBinding().to(Key.get(ParallelLeastCostPathCalculator.class, Names.named(IVTAVModule.AV_MODE)));
 
         bind(Network.class).annotatedWith(Names.named(DvrpModule.DVRP_ROUTING)).to(Network.class);
         bind(Network.class).annotatedWith(Names.named(IVTAVModule.AV_MODE)).to(Key.get(Network.class, Names.named(DvrpModule.DVRP_ROUTING)));
 	}
 
-	@Provides @Singleton @Named(IVTAVModule.AV_MODE)
+	/*@Provides @Singleton @Named(IVTAVModule.AV_MODE)
 	private ParallelLeastCostPathCalculator provideParallelLeastCostPathCalculator(AVConfigGroup config, AVParallelRouterFactory factory) {
         return new ParallelLeastCostPathCalculator((int) config.getParallelRouters(), factory);
-    }
+    }*/
+	@Provides @Singleton @Named(IVTAVModule.AV_MODE)
+	private ParallelLeastCostPathCalculator provideParallelLeastCostPathCalculator(AVConfigGroup config, @Named(IVTAVModule.AV_MODE) Network network, @Named(IVTAVModule.AV_MODE) TravelTime travelTime) {
+		if (config.getParallelRouters() == 0) {
+			return new SerialLeastCostPathCalculator(new DijkstraFactory().createPathCalculator(network, new OnlyTimeDependentTravelDisutility(travelTime), travelTime));
+		} else {
+			return DefaultParallelLeastCostPathCalculator.create((int) config.getParallelRouters(), new DijkstraFactory(), network, new OnlyTimeDependentTravelDisutility(travelTime), travelTime);
+		}
+	}
 
 	private void configureDispatchmentStrategies() {
         bind(SingleFIFODispatcher.Factory.class);

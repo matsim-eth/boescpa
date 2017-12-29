@@ -69,7 +69,6 @@ public class RunSimulationAV {
 		Scenario scenario = ScenarioUtils.createScenario(config);
 		scenario.getPopulation().getFactory().getRouteFactories().setRouteFactory(AVRoute.class, new AVRouteFactory());
 		ScenarioUtils.loadScenario(scenario);
-		//Scenario scenario = ScenarioUtils.loadScenario(config);
 
 		// Controller setup
 		Controler controler = new Controler(scenario);
