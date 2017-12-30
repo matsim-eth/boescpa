@@ -21,7 +21,9 @@
 
 package ch.ethz.matsim.boescpa.diss.simulations;
 
+import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.Person;
+import org.matsim.api.core.v01.population.PlanElement;
 import org.matsim.api.core.v01.population.Population;
 import org.matsim.core.population.io.PopulationWriter;
 
@@ -54,6 +56,12 @@ public class PopulationDilluter {
 				if (!(random.nextDouble() < shareOfPopToKeep)) {
 					toRemove.add(person);
 					if (toRemove.size() >= numberOfAgentsInPop) break;
+				} else {
+					for (PlanElement pe : person.getSelectedPlan().getPlanElements()) {
+						if (pe instanceof Leg && ((Leg)pe).getMode().equals("av")) {
+							((Leg)pe).setRoute(null);
+						}
+					}
 				}
 			}
 			if (toRemove.size() >= numberOfAgentsInPop) break;

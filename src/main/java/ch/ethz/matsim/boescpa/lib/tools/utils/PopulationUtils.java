@@ -21,6 +21,8 @@
 
 package ch.ethz.matsim.boescpa.lib.tools.utils;
 
+import ch.ethz.matsim.av.routing.AVRoute;
+import ch.ethz.matsim.av.routing.AVRouteFactory;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.population.Population;
 import org.matsim.core.config.ConfigUtils;
@@ -42,6 +44,7 @@ public class PopulationUtils {
 	 */
 	public static Population readPopulation(String path2Population) {
 		Scenario scenario = ScenarioUtils.createScenario(ConfigUtils.createConfig());
+		scenario.getPopulation().getFactory().getRouteFactories().setRouteFactory(AVRoute.class, new AVRouteFactory());
 		new PopulationReader(scenario).readFile(path2Population);
 		return scenario.getPopulation();
 	}
