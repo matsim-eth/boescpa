@@ -120,6 +120,18 @@ public class RunEvaluationCompleteEventsAnalysis {
 		}
 	}
 
+	private static final String header_AVPopStats = DEL + "avNumAgentsUsingCar" + DEL + "avNumHouseholdsUsingCar";
+
+	private String getAVPopStats(String pathToRunFolder, String runId) throws IOException {
+		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator + runId
+				+ ".output_plans_savPopStats.csv");
+		String[] line = reader.readLine().split(";");
+		String out = DEL + line[1];
+		line = reader.readLine().split(";");
+		out = out.concat(DEL + line[1]);
+		return out;
+	}
+
 	private static final String header_AVStats = DEL + "avTotWaitTimeAgents" + DEL + "avAvgWaitingTime" + DEL +
 			"avMaxWaitingTime" + DEL + "avMinWaitingTime" + DEL + "avNumWaitingBiggerLoS" + DEL +
 			"avWaitingTime25thPercentile" + DEL + "avWaitingTime50thPercentile" + DEL + "avWaitingTime75thPercentile" +
@@ -132,28 +144,30 @@ public class RunEvaluationCompleteEventsAnalysis {
 			"avAvgBordingTimePerSAVandDay" + DEL + "avTotalDrivingTime" + DEL + "avAverageDriveTimePass" + DEL +
 			"avAvgDriveTimeSAVandDay" + DEL + "avTotalDrivingDist" + DEL + "avAvgDrivingDistSAVandDay" + DEL +
 			"avAvgDrivingSpeedAVwhenPass" + DEL + "avTotalDropoffTime" + DEL + "avAvgDropOffPassenger" + DEL +
-			"avAvgDropOffPerSAVandDay" + DEL + "avTotalNumPassengers" + DEL + "avTotalNumSAVs" + DEL + "avNumPassPerSAV";
+			"avAvgDropOffPerSAVandDay" + DEL + "avTotalNumPassengers" + DEL + "avTotalNumSAVs" + DEL + "avNumPassPerSAV"
+			+ header_AVPopStats;
 
 	private String getAVStats(String pathToRunFolder, String runId) throws IOException {
+		String out = "";
 		if (simClass.equals("nonAV")) {
-			return DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 +
+			out = DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 +
 					DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 +
 					DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 +
 					DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0 + DEL + 0;
-		}
-		BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
-				+ "savUsageStats.csv");
-		reader.readLine(); // header
-		String line = reader.readLine();
-		String out = "";
-		while (line != null) {
-			if (!line.equals("")) {
-				String avStat = line.split(";")[2];
-				out = out.concat(DEL + avStat);
+		} else {
+			BufferedReader reader = IOUtils.getBufferedReader(pathToRunFolder + File.separator
+					+ "savUsageStats.csv");
+			reader.readLine(); // header
+			String line = reader.readLine();
+			while (line != null) {
+				if (!line.equals("")) {
+					String avStat = line.split(";")[2];
+					out = out.concat(DEL + avStat);
+				}
+				line = reader.readLine();
 			}
-			line = reader.readLine();
 		}
-		return out;
+		return out + getAVPopStats(pathToRunFolder, runId);
 	}
 
 	private static final String header_Accessibility = DEL + "access_night_car" + DEL + "access_night_pt" +
