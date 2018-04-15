@@ -32,7 +32,8 @@ import java.text.DecimalFormatSymbols;
 import java.util.*;
 
 /**
- * WHAT IS IT FOR?
+ * Evaluates and summarizes results from different MATSim-Runs in one file.
+ * When running this class, it is expected that the different runs were preprocessed with CompleteEventsAnalysis before.
  *
  * @author boescpa
  */

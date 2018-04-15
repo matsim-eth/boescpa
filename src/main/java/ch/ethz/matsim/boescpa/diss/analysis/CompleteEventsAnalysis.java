@@ -51,7 +51,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * WHAT IS IT FOR?
+ * Evaluates results of MATSim-Runs.
  *
  * @author boescpa
  */
